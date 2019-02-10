@@ -1,0 +1,216 @@
+#!/bin/bash
+
+# define some colors
+RED='\033[1;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[1;32m'
+BLUE='\033[1;34m'
+BLANK='\033[0m'
+
+# define log level prefix
+ERROR="$RED[error]$BLANK"
+WARN="$YELLOW[warn]$BLANK"
+SUCCESS="$GREEN[success]$BLANK"
+INFO="$BLUE[info]$BLANK"
+
+# constant variables
+XDIR=/etc/X11
+XFILE=$XDIR/xorg.conf
+XFILE_EGPU=$XDIR/xorg.conf.egpu
+XFILE_INTERNAL=$XDIR/xorg.conf.internal
+XFILE_BACKUP=$XFILE.backup
+TMP_DIR=/tmp/egpu-switcher
+TMP_FILE=$TMP_DIR/results
+TMP_TEMPLATE=$TMP_DIR/xorg.conf.template
+DATETIME=$(date '+%Y%m%d%H%M%S')
+NUMBER_REGEX='^[0-9]+$'
+
+# check if the script is run as root
+if [[ $EUID -ne 0 ]]; then 
+  	echo -e "$ERROR You need to run the script with root privileges"
+  	exit
+fi
+
+# check if an argument was passed
+if [ -z $1 ]; then
+	echo -e "$ERROR No argument passed."
+	exit
+fi
+
+read_gpus() {
+	if [ -z $1 ]; then
+		printf "$WARN No argument passed to read_gpus(). Taking nvidia-xconfig by default.\n"
+	fi
+
+	if [ -z $1 ] || [ $1 = "nvidia-xconfig" ]; then
+		nvidia-xconfig --query-gpu-info | grep -i -e 'gpu #[0-9]' | while read -r line ; do
+			bus=$(nvidia-xconfig --query-gpu-info | grep "$line" -A 3 | awk '/PCI BusID/{print$4}')
+			name=$(nvidia-xconfig --query-gpu-info | grep "$line" -A 3 | grep -oP 'Name\s+\:\s+\K.*')
+			echo -e "$name ($bus)" >> $TMP_FILE
+		done
+		return
+	fi
+}
+
+setup() {
+
+	# create the tmp dir
+	mkdir -p $TMP_DIR
+
+	# delete existing results file
+	rm -f $TMP_FILE
+
+	# download the xorg.conf.template file
+	wget -q https://raw.githubusercontent.com/hertg/linux-egpu-setup/master/xorg.conf.template -O $TMP_TEMPLATE
+	chmod 640 $TMP_TEMPLATE
+
+	# check if the template/script files can be found
+	if [ ! -f $TMP_TEMPLATE ]; then
+		echo -e "$ERROR The file $TMP_TEMPLATE wasn't found. Are you connected to the Internet?"
+		exit
+	fi
+
+	# search for GPUs and save them to the temp file
+	read_gpus $1
+
+	if ! [ -f $TMP_FILE ]; then 
+		echo -e "$ERROR There was a problem in reading the connected GPUs."
+		if ! [ -z $1 ]; then
+			echo -e "$ERROR Maybe your argument \"$1\" is not valid?"
+		fi
+		exit
+	fi
+
+	# save the number of lines to a variable
+	NUM_OF_RESULTS=$(wc -l < $TMP_FILE)
+
+	# additional check
+	if [ $NUM_OF_RESULTS -lt "2" ]; then
+		echo -e "$WARN Only $NUM_OF_RESULTS GPUs found, there need to be at least 2. Make sure to connect your EGPU for the setup."
+		exit
+	fi
+
+	# print the GPUs found
+	echo -e "Found $NUM_OF_RESULTS possible GPUs..."
+	echo ""
+
+	i=0
+	while read -r line; do
+		i=$((i+1))
+		echo "  $i: $line"
+	done < "$TMP_FILE"
+
+	echo ""
+
+	# prompt to choose the internal gpu from the list
+	printf "Choose your preferred$GREEN INTERNAL$BLANK GPU [1-$NUM_OF_RESULTS]: "
+	read internal
+	PCI_INTERNAL=$(sed ''"$internal"'q;d' $TMP_FILE | grep -Eo 'PCI\:[0-9]+\:[0-9]+\:[0-9]+')
+
+	if ! [[ $internal =~ $NUMBER_REGEX ]] || [ -z "$PCI_INTERNAL" ]; then
+		echo -e "$ERROR Your input is invalid. Exiting setup..."
+		exit
+	fi
+
+	# prompt to choose the external gpu from the list
+	printf "Choose your preferred$GREEN EXTERNAL$BLANK GPU [1-$NUM_OF_RESULTS]: "
+	read external
+	PCI_EXTERNAL=$(sed ''"$external"'q;d' $TMP_FILE | grep -Eo 'PCI\:[0-9]+\:[0-9]+\:[0-9]+')
+
+	if ! [[ $external =~ $NUMBER_REGEX ]] || [ -z "$PCI_EXTERNAL" ]; then
+		echo -e "$ERROR Your input is invalid. Exiting setup..."
+		exit
+	fi
+
+	# create the internal xorg config file
+	cp $TMP_TEMPLATE $XFILE_INTERNAL
+	sed -i -e 's/\$BUS/'$PCI_INTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XFILE_INTERNAL
+
+	# create the external xorg config file
+	cp $TMP_TEMPLATE $XFILE_EGPU
+	sed -i -e 's/\$BUS/'$PCI_EXTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XFILE_EGPU
+
+	# Executing the switch command to create the xorg.conf file
+	switch
+
+	# setup startup script
+	echo "TODO"
+
+	echo -e "$SUCCESS Done... Setup finished"
+}
+
+switch() {
+	if ! [ -f $XFILE_EGPU ] || ! [ -f $XFILE_INTERNAL ]; then
+		echo -e "$ERROR The xorg.conf files for egpu and internal do not exist. Run the setup first."
+		return
+	fi
+
+	if [ -z $1 ]; then
+		EGPU_PCI_ID=$(cat $XFILE_EGPU | grep -Ei "BusID" | grep -oEi '[0-9]+\:[0-9]+\:[0-9]+')
+		TEST=$(nvidia-xconfig --query-gpu-info | grep -c $EGPU_PCI_ID)
+
+		# Check if there is a xorg.conf file, and back it up
+		if [ -f $XFILE ] && ! [ -L $XFILE ]; then
+			echo -e "$WARN The $XFILE file already exists. Saving a backup to $XFILE_BACKUP.$DATETIME"
+			cp "$XFILE" "$XFILE_BACKUP.$DATETIME"
+		fi
+
+		printf "$INFO Automatically detecting if egpu is connected... "
+
+		# check if the PCI of the egpu is listed in the "nvidia-xconfig --query-gpu-info" output
+		if([ $TEST -eq 1 ]); then
+			echo -e "$GREEN true"
+			set -- "$1egpu"
+		else
+			echo -e "$RED false"
+			set -- "$1internal"
+		fi
+	fi
+
+	if [ $1 = "egpu" ]; then
+		echo -e "$INFO Create symlink $GREEN$XFILE$BLANK -> $XFILE_EGPU"
+		ln -sf $XFILE_EGPU $XFILE
+		return
+	fi
+
+	if [ $1 = "internal" ]; then
+		echo -e "$INFO Create symlink $GREEN$XFILE$BLANK -> $XFILE_INTERNAL"
+		ln -sf $XFILE_INTERNAL $XFILE
+		return
+	fi
+
+	echo -e "$ERROR The argument \"$1\" that was passed to the switch method is not valid."
+}
+
+cleanup() {
+	echo -e "$INFO Starting cleanup process"
+	rm -rfd $TMP_DIR
+	rm -rf $XFILE_EGPU
+	rm -rf $XFILE_INTERNAL
+
+	# delete the xorg.conf file, if it is a symlink and restore the last backup
+	if [ -L $XFILE ]; then
+		rm -rf $XFILE
+		lastbackup=$(ls -t $XFILE_BACKUP.* | head -1)
+		if [ -f $lastbackup ]; then
+			echo -e "$INFO Restoring latest backup $GREEN$lastbackup"
+			mv $lastbackup $XFILE
+		fi
+	fi
+
+	echo -e "$SUCCESS Done... Finished cleanup"
+}
+
+if [ $1 = "setup" ]; then
+	setup $2
+fi
+
+if [ $1 = "switch" ]; then
+	switch $2
+fi
+
+if [ $1 = "cleanup" ]; then
+	cleanup
+fi
+
+# systemctl restart display-manager.service
