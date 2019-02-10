@@ -1,6 +1,5 @@
 Section "Module"
     Load           "modesetting"
-    Load           "glx"
 EndSection
 
 Section "Device"
@@ -8,5 +7,5 @@ Section "Device"
     Driver         "$DRIVER"
     BusID          "$BUS"
     Option         "AllowEmptyInitialConfiguration"
-    Option         "AllowExternalGpus"
+    Option         "AllowExternalGpus" "True"
 EndSection

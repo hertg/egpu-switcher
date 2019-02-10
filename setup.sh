@@ -38,8 +38,11 @@ mkdir -p $TMP_DIR
 rm -f $TMP_FILE
 
 # search for GPUs and save them to the temp file
-lspci | grep VGA | while read -r line ; do
-    echo "$line" >> $TMP_FILE
+nvidia-xconfig --query-gpu-info | grep -i -e 'gpu #[0-9]' | while read -r line ; do
+    
+    bus=$(nvidia-xconfig --query-gpu-info | grep "$line" -A 3 | awk '/PCI BusID/{print$4}')
+    name=$(nvidia-xconfig --query-gpu-info | grep "$line" -A 3 | grep -oP 'Name\s+\:\s+\K.*')
+    echo "$name ($bus)" >> $TMP_FILE
 done
 
 # save the number of lines to a variable
@@ -64,23 +67,23 @@ done < "$TMP_FILE"
 
 echo ""
 
-# prompt to choose the internal gpu from the list
+# prompt to choose the internal gpu from the listnvidia-xconfig --query-gpu-info | grep $line -A 3
 echo "Choose your preferred INTERNAL GPU [1-$NUM_OF_RESULTS]: "
 read internal
-PCI_INTERNAL=$(sed ''"$internal"'q;d' $TMP_FILE | grep -Eo '^[^ ]+')
+PCI_INTERNAL=$(sed ''"$internal"'q;d' $TMP_FILE | grep -Eo 'PCI\:[0-9]+\:[0-9]+\:[0-9]+')
 
 # prompt to choose the external gpu from the list
 echo "Choose your preferred EXTERNAL GPU [1-$NUM_OF_RESULTS]: "
 read external
-PCI_EXTERNAL=$(sed ''"$external"'q;d' $TMP_FILE | grep -Eo '^[^ ]+')
+PCI_EXTERNAL=$(sed ''"$external"'q;d' $TMP_FILE | grep -Eo 'PCI\:[0-9]+\:[0-9]+\:[0-9]+')
 
 # create the internal xorg config file
 cp $TEMPLATE_FILE $XORG_INTERNAL
-sed -i -e 's/\$BUS/PCI:'$PCI_INTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XORG_INTERNAL
+sed -i -e 's/\$BUS/'$PCI_INTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XORG_INTERNAL
 
 # create the external xorg config file
 cp $TEMPLATE_FILE $XORG_EGPU
-sed -i -e 's/\$BUS/PCI:'$PCI_EXTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XORG_EGPU
+sed -i -e 's/\$BUS/'$PCI_EXTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XORG_EGPU
 
 # setup startup script
 if [ -f $INITD ]; then
