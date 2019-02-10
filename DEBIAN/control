@@ -1,0 +1,11 @@
+Package: egpu-switcher
+Version: 0.1
+Architecture: all
+Maintainer: hertg
+Installed-Size: 6
+Depends: nvidia-xconfig, lspci, bash
+Section: testing
+Priority: optional
+Homepage: https://github.com/hertg/egpu-switcher
+Description: EGPU Switcher for Linux
+ 
