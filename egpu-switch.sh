@@ -1,20 +1,20 @@
 #!/bin/sh
 
+# define constand variables
 DIR=/etc/X11
 FILE=xorg.conf
 FILE_EGPU=xorg.conf.egpu
 FILE_INTERNAL=xorg.conf.internal
+EGPU_PCI_ID=$(cat $DIR/$FILE_EGPU | grep -Ei "BusID" | grep -oEi '[0-9a-f]{,2}\:[0-9a-f]{,2}\.[0-9a-f]')
+TEST=$(lspci | grep -c $EGPU_PCI_ID)
 
-TEST=$(lspci | grep -c " VGA ")
-
-#rm $DIR/$FILE
-
-if([ $TEST -eq 2 ]); then
-	# EGPU IS CONNECTED
+# check if the PCI of the egpu is listed in the "lspci" output
+if([ $TEST -eq 1 ]); then
+	# egpu is connected
 	echo "egpu detected... linking $FILE_EGPU to $FILE"
 	ln -sf $DIR/$FILE_EGPU $DIR/$FILE
 else
-	# EGPU IS NOT CONNECTED
+	# egpu is not connected
 	echo "NO egpu detected... linking $FILE_INTERNAL to $FILE"
 	ln -sf $DIR/$FILE_INTERNAL $DIR/$FILE
 fi

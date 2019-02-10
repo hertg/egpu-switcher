@@ -8,10 +8,27 @@ XORG_DIR=/etc/X11
 XORG_EGPU=$XORG_DIR/xorg.conf.egpu
 XORG_INTERNAL=$XORG_DIR/xorg.conf.internal
 
+INITD_TEMPLATE=./egpu-switch.sh
+INITD=/etc/init.d/egpu-switch
+INITD_SYMLINK=/etc/rc5.d/S15egpu-switch
+
 # check if the script is run as root
 if [ "$EUID" -ne 0 ]
   then echo "You need to run the script with root privileges"
   exit
+fi
+
+# check if the template/script files can be found
+if [ ! -f $TEMPLATE_FILE ]; then
+    echo "The xorg.conf template file could not be found."
+    echo "Have you run the setup script in the same order where its located?"
+    exit
+fi
+
+if [ ! -f $INITD_TEMPLATE ]; then
+    echo "The egpu-switch script file could not be found."
+    echo "Have you run the setup script in the same order where its located?"
+    exit
 fi
 
 # create the tmp dir
@@ -65,3 +82,29 @@ sed -i -e 's/\$BUS/PCI:'$PCI_INTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/De
 cp $TEMPLATE_FILE $XORG_EGPU
 sed -i -e 's/\$BUS/PCI:'$PCI_EXTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XORG_EGPU
 
+# setup startup script
+if [ -f $INITD ]; then
+    echo "The script $INITD does already exist. Removing it ..."
+    rm -f $INITD_SYMLINK
+    rm -f $INITD
+fi
+
+cp $INITD_TEMPLATE $INITD
+ln -sf $INITD $INITD_SYMLINK
+
+if [ -f $INITD ]; then
+    echo "The file $INITD was created"
+else
+    echo "Something went wrong while creating the $INITD file"
+    exit
+fi
+
+
+if [ -f $INITD_SYMLINK ]; then
+    echo "The file $INITD_SYMLINK was created"
+else
+    echo "Something went wrong while creating the $INITD_SYMLINK file"
+    exit
+fi
+
+echo "Script finished"
