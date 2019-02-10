@@ -1,0 +1,12 @@
+Section "Module"
+    Load           "modesetting"
+    Load           "glx"
+EndSection
+
+Section "Device"
+    Identifier     "$ID"
+    Driver         "$DRIVER"
+    BusID          "$BUS"
+    Option         "AllowEmptyInitialConfiguration"
+    Option         "AllowExternalGpus"
+EndSection
