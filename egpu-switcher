@@ -39,10 +39,11 @@ fi
 
 read_gpus() {
 	if [ -z $1 ]; then
-		printf "$WARN No argument passed to read_gpus(). Taking nvidia-xconfig by default.\n"
+		printf "$INFO No argument passed to read_gpus(). Using nvidia-xconfig by default.\n"
+		set -- "nvidia-xconfig"
 	fi
 
-	if [ -z $1 ] || [ $1 = "nvidia-xconfig" ]; then
+	if [ $1 = "nvidia-xconfig" ]; then
 		nvidia-xconfig --query-gpu-info | grep -i -e 'gpu #[0-9]' | while read -r line ; do
 			bus=$(nvidia-xconfig --query-gpu-info | grep "$line" -A 3 | awk '/PCI BusID/{print$4}')
 			name=$(nvidia-xconfig --query-gpu-info | grep "$line" -A 3 | grep -oP 'Name\s+\:\s+\K.*')
@@ -50,6 +51,41 @@ read_gpus() {
 		done
 		return
 	fi
+
+	if [ $1 = "lspci" ]; then
+		echo -e "$WARN method $1 not implemented yet. Exit program."
+		exit
+	fi
+
+	echo -e "$ERROR Unknown option \"$1\" passed to is_egpu_connected. Exit program."
+	exit
+}
+
+# returns 1 if egpu is connected, 0 if not
+is_egpu_connected() {
+	# read pci id from xorg.conf.egpu
+	EGPU_PCI_ID=$(cat $XFILE_EGPU | grep -Ei "BusID" | grep -oEi '[0-9]+\:[0-9]+\:[0-9]+')
+
+	if [ -z $1 ]; then
+		echo -e "$INFO No argument passed to is_egpu_connected() method. Using nvidia-xconfig by default."
+		set -- "nvidia-xconfig"
+	fi
+
+	if [ $1 = "nvidia-xconfig" ]; then 
+		if [ $(nvidia-xconfig --query-gpu-info | grep -c $EGPU_PCI_ID) -eq 1 ]; then
+			return 1;
+		else
+			return 0;
+		fi
+	fi
+
+	if [ $1 = "lspci" ]; then
+		echo -e "$WARN method $1 not implemented yet. Exit program."
+		exit
+	fi
+
+	echo -e "$ERROR Unknown option \"$1\" passed to is_egpu_connected. Exit program."
+	exit
 }
 
 setup() {
@@ -91,6 +127,7 @@ setup() {
 	fi
 
 	# print the GPUs found
+	echo ""
 	echo -e "Found $NUM_OF_RESULTS possible GPUs..."
 	echo ""
 
@@ -122,6 +159,8 @@ setup() {
 		exit
 	fi
 
+	echo ""
+
 	# create the internal xorg config file
 	cp $TMP_TEMPLATE $XFILE_INTERNAL
 	sed -i -e 's/\$BUS/'$PCI_INTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XFILE_INTERNAL
@@ -131,7 +170,7 @@ setup() {
 	sed -i -e 's/\$BUS/'$PCI_EXTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XFILE_EGPU
 
 	# Executing the switch command to create the xorg.conf file
-	switch
+	switch auto $1
 
 	# setup startup script
 	echo "TODO"
@@ -140,30 +179,36 @@ setup() {
 }
 
 switch() {
+	# Check if the argument was passed
+	if [ -z $1 ]; then
+		echo -e "$ERROR No argument passed to the switch method. Possible options: auto, egpu, internal"
+		exit
+	fi
+
+	# Check if the xorg.conf files for internal and egpu exist
 	if ! [ -f $XFILE_EGPU ] || ! [ -f $XFILE_INTERNAL ]; then
 		echo -e "$ERROR The xorg.conf files for egpu and internal do not exist. Run the setup first."
 		return
 	fi
 
-	if [ -z $1 ]; then
-		EGPU_PCI_ID=$(cat $XFILE_EGPU | grep -Ei "BusID" | grep -oEi '[0-9]+\:[0-9]+\:[0-9]+')
-		TEST=$(nvidia-xconfig --query-gpu-info | grep -c $EGPU_PCI_ID)
+	# Check if there is a xorg.conf file, and back it up
+	if [ -f $XFILE ] && ! [ -L $XFILE ]; then
+		echo -e "$WARN The $XFILE file already exists. Saving a backup to $XFILE_BACKUP.$DATETIME"
+		cp "$XFILE" "$XFILE_BACKUP.$DATETIME"
+	fi
 
-		# Check if there is a xorg.conf file, and back it up
-		if [ -f $XFILE ] && ! [ -L $XFILE ]; then
-			echo -e "$WARN The $XFILE file already exists. Saving a backup to $XFILE_BACKUP.$DATETIME"
-			cp "$XFILE" "$XFILE_BACKUP.$DATETIME"
-		fi
+	# if no parameter was passed to the method
+	if [ $1 = "auto" ]; then
 
+		is_egpu_connected $2
+		local connected=$?
 		printf "$INFO Automatically detecting if egpu is connected... "
-
-		# check if the PCI of the egpu is listed in the "nvidia-xconfig --query-gpu-info" output
-		if([ $TEST -eq 1 ]); then
+		if [ $connected = 1 ] ; then
 			echo -e "$GREEN true"
-			set -- "$1egpu"
+			set -- "egpu"
 		else
 			echo -e "$RED false"
-			set -- "$1internal"
+			set -- "internal"
 		fi
 	fi
 
@@ -191,7 +236,7 @@ cleanup() {
 	# delete the xorg.conf file, if it is a symlink and restore the last backup
 	if [ -L $XFILE ]; then
 		rm -rf $XFILE
-		lastbackup=$(ls -t $XFILE_BACKUP.* | head -1)
+		local lastbackup=$(ls -t $XFILE_BACKUP.* | head -1)
 		if [ -f $lastbackup ]; then
 			echo -e "$INFO Restoring latest backup $GREEN$lastbackup"
 			mv $lastbackup $XFILE
@@ -206,7 +251,7 @@ if [ $1 = "setup" ]; then
 fi
 
 if [ $1 = "switch" ]; then
-	switch $2
+	switch $2 $3
 fi
 
 if [ $1 = "cleanup" ]; then

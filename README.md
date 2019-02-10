@@ -12,11 +12,13 @@ This script will try to detect your GPUs and prompt you to answer which is the i
 
 # Usage
 ## Setup
-`egpu-switcher setup`
+`egpu-switcher setup <method>`\
+Will start the setup process. If no method is passed, the `nvidia-xconfig` will be used by default.
 
 ## Switch
-`egpu-switcher switch`\
-This command will automatically detect if the egpu is connected and update the `xorg.conf` symlink accordingly.
+`egpu-switcher switch auto <method>`\
+This command will automatically detect if the egpu is connected and update the `xorg.conf` symlink accordingly.\
+If no method is passed, the `nvidia-xconfig` will be used by default.
 
 `egpu-switcher switch egpu`\
 This command will point the `xorg.conf` symlink to `xorg.conf.egpu`
