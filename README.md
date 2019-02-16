@@ -10,6 +10,13 @@ This script will try to detect your GPUs and prompt you to answer which is the i
 # Prerequisites
 1. Install the proprietary NVIDIA drivers
 
+# Install
+```bash
+$ sudo add-apt-repository ppa:hertg/egpu-switcher
+$ sudo apt update
+$ sudo apt install egpu-switcher
+```
+
 # Usage
 ## Setup
 `egpu-switcher setup <method>`\
