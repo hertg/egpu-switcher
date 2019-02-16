@@ -1,4 +1,0 @@
-#!/bin/sh
-set -e
-echo 'Removing program : egpu-switcher ......'
-egpu-switcher cleanup
