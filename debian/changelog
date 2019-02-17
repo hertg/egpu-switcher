@@ -1,3 +1,9 @@
+egpu-switcher (0.2.0) bionic; urgency=medium
+
+  * Automatically install an init.d script to select the correct gpu on startup
+
+ -- Michael Hertig <info@michaelhertig.ch>  Sun, 17 Feb 2019 14:57:09 +0100
+
 egpu-switcher (0.1.0) bionic; urgency=medium
 
   * Initial Release.
