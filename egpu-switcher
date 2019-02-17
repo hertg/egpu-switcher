@@ -21,7 +21,7 @@ XFILE_INTERNAL=$XDIR/xorg.conf.internal
 XFILE_BACKUP=$XFILE.backup
 TMP_DIR=/tmp/egpu-switcher
 TMP_FILE=$TMP_DIR/results
-TMP_TEMPLATE=$TMP_DIR/xorg.conf.template
+TMP_TEMPLATE=/usr/share/egpu-switcher/xorg.conf.template
 DATETIME=$(date '+%Y%m%d%H%M%S')
 NUMBER_REGEX='^[0-9]+$'
 
@@ -96,10 +96,6 @@ setup() {
 	# delete existing results file
 	rm -f $TMP_FILE
 
-	# download the xorg.conf.template file
-	wget -q https://raw.githubusercontent.com/hertg/linux-egpu-setup/master/xorg.conf.template -O $TMP_TEMPLATE
-	chmod 640 $TMP_TEMPLATE
-
 	# check if the template/script files can be found
 	if [ ! -f $TMP_TEMPLATE ]; then
 		echo -e "$ERROR The file $TMP_TEMPLATE wasn't found. Are you connected to the Internet?"
@@ -161,6 +157,10 @@ setup() {
 
 	echo ""
 
+	if ! [ -f $TMP_TEMPLATE ]; then
+		echo -e "$ERROR Something is wrong with your installation, the file \"$TMP_TEMPLATE\" was not found."
+	fi
+
 	# create the internal xorg config file
 	cp $TMP_TEMPLATE $XFILE_INTERNAL
 	sed -i -e 's/\$BUS/'$PCI_INTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XFILE_INTERNAL
@@ -171,9 +171,6 @@ setup() {
 
 	# Executing the switch command to create the xorg.conf file
 	switch auto $1
-
-	# setup startup script
-	echo "TODO"
 
 	echo -e "$SUCCESS Done... Setup finished"
 }
@@ -257,5 +254,3 @@ fi
 if [ $1 = "cleanup" ]; then
 	cleanup
 fi
-
-# systemctl restart display-manager.service
