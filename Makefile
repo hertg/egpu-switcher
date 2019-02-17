@@ -16,6 +16,3 @@ uninstall:
 	rm -rfd ${DESTDIR}${SHAREDIR}/egpu-switcher
 	rm /etc/rc5.d/S15egpu-switcher
 	rm /etc/init.d/egpu-switcher-startup
-
-clean:
-	egpu-switcher cleanup
