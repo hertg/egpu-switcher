@@ -1,3 +1,9 @@
+egpu-switcher (0.4.0) bionic; urgency=medium
+
+  * Add update-rc.d command to setup method to enable egpu-switcher on startup
+
+ -- Michael Hertig <info@michaelhertig.ch>  Mon, 04 Mar 2019 20:29:34 +0100
+
 egpu-switcher (0.3.0) bionic; urgency=medium
 
   * removed some lines from Makefile, added prerm script, extended cleanup method

@@ -179,6 +179,7 @@ setup() {
 	chmod +x $INITD_SCRIPT
 	echo "egpu-switcher switch auto" > $INITD_SCRIPT
 	ln -sf $INITD_SCRIPT $INITD_RC5_SYMLINK
+	update-rc.d egpu-switcher defaults
 
 	if ! [ -f $INITD_SCRIPT ]; then
 		echo -e "$ERROR Could not create the init.d startup script."
