@@ -55,3 +55,8 @@ This command will revert the whole `setup` process and remove all files it has c
 Additionally the command will restore your previous `xorg.conf` that you had before running the `setup`.
 
 > This command is executed automatically while doing a `apt remove --purge egpu-switcher`.
+
+# Build
+1. Update changelog: `dch`
+1. Build: `debuild -S | tee /tmp/debuild.log 2>&1`
+1. Upload to ppa: `dput ppa:hertg/egpu-switcher egpu-switcher_X.X.X_source.changes`
