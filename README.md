@@ -32,8 +32,9 @@ $ sudo apt install egpu-switcher
 ## Setup
 `egpu-switcher setup <method>`\
 Will start the setup process. 
-> If no method is passed, the `nvidia-xconfig` will be used by default.\
+> If no method is passed, the `lspci` will be used by default.\
 > The following methods are available: 
+> - `lspci`
 > - `nvidia-xconfig`
 
 ## Switch
