@@ -41,7 +41,7 @@ fi
 
 read_gpus() {
 	if [ -z $1 ]; then
-		printf "$INFO No argument passed to read_gpus(). Using lspci by default.\n"
+		printf "$INFO Using default argument for read_gpus().\n"
 		set -- "lspci"
 	fi
 
@@ -181,12 +181,15 @@ setup() {
 	fi
 
 	# create the internal xorg config file
-	cp $TMP_TEMPLATE $XFILE_INTERNAL
-	sed -i -e 's/\$BUS/'$PCI_INTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XFILE_INTERNAL
+	#cp $TMP_TEMPLATE $XFILE_INTERNAL
+	#sed -i -e 's/\$BUS/'$PCI_INTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XFILE_INTERNAL
 
 	# create the external xorg config file
+	#cp $TMP_TEMPLATE $XFILE_EGPU
+	#sed -i -e 's/\$BUS/'$PCI_EXTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XFILE_EGPU
+
 	cp $TMP_TEMPLATE $XFILE_EGPU
-	sed -i -e 's/\$BUS/'$PCI_EXTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XFILE_EGPU
+	sed -i -e 's/\$BUS_INTERNAL/'$PCI_INTERNAL'/g' -e 's/\$BUS_EXTERNAL/'$PCI_EXTERNAL'/g' $XFILE_EGPU
 
 	# Executing the switch command to create the xorg.conf file
 	switch auto $1
@@ -269,6 +272,8 @@ cleanup() {
 		if [ -f $lastbackup ]; then
 			echo -e "$INFO Restoring latest backup $GREEN$lastbackup"
 			mv $lastbackup $XFILE
+		else
+			echo -e "$INFO No backup found - Nothing to restore"
 		fi
 	fi
 

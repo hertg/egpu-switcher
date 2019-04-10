@@ -1,11 +1,48 @@
-Section "Module"
-    Load           "modesetting"
+#Section "Module"
+#    Load           "modesetting"
+#EndSection
+#
+#Section "Device"
+#    Identifier     "$ID"
+#    Driver         "$DRIVER"
+#    BusID          "$BUS"
+#    Option         "AllowEmptyInitialConfiguration"
+#    Option         "AllowExternalGpus" "True"
+#EndSection
+
+
+Section "ServerLayout"
+Identifier "layout"
+Screen 0 "internal"
+Inactive "external"
+EndSection
+
+Section "ServerLayout"
+Identifier "egpu"
+Screen 0 "external"
+Inactive "internal"
 EndSection
 
 Section "Device"
-    Identifier     "$ID"
-    Driver         "$DRIVER"
-    BusID          "$BUS"
-    Option         "AllowEmptyInitialConfiguration"
-    Option         "AllowExternalGpus" "True"
+Identifier "egpu"
+Driver "nvidia"
+BusID "$BUS_EXTERNAL"
+Option "AllowEmptyInitialConfiguration"
+Option "AllowExternalGpus"
+EndSection
+
+Section "Screen"
+Identifier "external"
+Device "egpu"
+EndSection
+
+Section "Device"
+Identifier "igpu"
+Driver "nvidia"
+BusID "$BUS_INTERNAL"
+EndSection
+
+Section "Screen"
+Identifier "internal"
+Device "igpu"
 EndSection
