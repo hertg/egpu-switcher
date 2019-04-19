@@ -14,13 +14,13 @@
 Section "ServerLayout"
 Identifier "layout"
 Screen 0 "internal"
-Inactive "external"
+Inactive "egpu"
 EndSection
 
 Section "ServerLayout"
 Identifier "egpu"
 Screen 0 "external"
-Inactive "internal"
+Inactive "igpu"
 EndSection
 
 Section "Device"

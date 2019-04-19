@@ -55,7 +55,7 @@ read_gpus() {
 	fi
 
 	if [ $1 = "lspci" ]; then
-		lspci | grep -i vga | while read -r line ; do
+		lspci | grep -i -E "vga|3d" | while read -r line ; do
 			name=$(echo $line | grep -o -e "[^:]*$")
 			bus=$(echo $line | grep -o -e "^[^ ]*")
 
@@ -71,7 +71,7 @@ read_gpus() {
 
 			# Remove the whitespace at the beginning of the name
 			# And concatenate bus IDs
-			echo -e "${name:1} ($bus1d:$bus2d:$bus3d)" >> $TMP_FILE
+			echo -e "${name:1} (PCI:$bus1d:$bus2d:$bus3d)" >> $TMP_FILE
 		done
 		return
 	fi
@@ -188,22 +188,22 @@ setup() {
 	#cp $TMP_TEMPLATE $XFILE_EGPU
 	#sed -i -e 's/\$BUS/'$PCI_EXTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XFILE_EGPU
 
-	cp $TMP_TEMPLATE $XFILE_EGPU
-	sed -i -e 's/\$BUS_INTERNAL/'$PCI_INTERNAL'/g' -e 's/\$BUS_EXTERNAL/'$PCI_EXTERNAL'/g' $XFILE_EGPU
+	cp $TMP_TEMPLATE $XFILE
+	sed -i -e 's/\$BUS_INTERNAL/'$PCI_INTERNAL'/g' -e 's/\$BUS_EXTERNAL/'$PCI_EXTERNAL'/g' $XFILE
 
 	# Executing the switch command to create the xorg.conf file
-	switch auto $1
+	#switch auto $1
 
 	# setup startup script
-	touch $INITD_SCRIPT
-	chmod +x $INITD_SCRIPT
-	echo "egpu-switcher switch auto" > $INITD_SCRIPT
-	ln -sf $INITD_SCRIPT $INITD_RC5_SYMLINK
-	update-rc.d egpu-switcher defaults
+	#touch $INITD_SCRIPT
+	#chmod +x $INITD_SCRIPT
+	#echo "egpu-switcher switch auto" > $INITD_SCRIPT
+	#ln -sf $INITD_SCRIPT $INITD_RC5_SYMLINK
+	#update-rc.d egpu-switcher defaults
 
-	if ! [ -f $INITD_SCRIPT ]; then
-		echo -e "$ERROR Could not create the init.d startup script."
-	fi
+	#if ! [ -f $INITD_SCRIPT ]; then
+	#	echo -e "$ERROR Could not create the init.d startup script."
+	#fi
 
 	echo -e "$SUCCESS Done... Setup finished"
 }
