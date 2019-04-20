@@ -23,7 +23,7 @@ TMP_DIR=/tmp/egpu-switcher
 TMP_FILE=$TMP_DIR/results
 TMP_TEMPLATE=/usr/share/egpu-switcher/xorg.conf.template
 SYSTEMD_TEMPLATE=/usr/share/egpu-switcher/egpu.service
-SYSTEMD_FOLDER=/etc/systemd/system/
+SYSTEMD_FOLDER=/etc/systemd/system
 DATETIME=$(date '+%Y%m%d%H%M%S')
 NUMBER_REGEX='^[0-9]+$'
 
@@ -218,7 +218,7 @@ setup() {
 	# create the internal xorg config file
 	cp $TMP_TEMPLATE $XFILE_INTERNAL
 	internal_driver=$(get_driver "$FULL_INTERNAL")
-	if [ $internal_driver == ""]; then
+	if [ -z $internal_driver ]; then
 		printf "$ERROR Could not parse manufacturer from \"$FULL_INTERNAL\". Please manually enter the driver to be used: "
 		read driver
 		internal_driver=$driver
@@ -228,7 +228,7 @@ setup() {
 	# create the external xorg config file
 	cp $TMP_TEMPLATE $XFILE_EGPU
 	external_driver=$(get_driver "$FULL_EXTERNAL")
-	if [ $external_driver == ""]; then
+	if [ -z "$external_driver" ]; then
 		printf "$ERROR Could not parse manufacturer from \"$FULL_EXTERNAL\". Please manually enter the driver to be used: "
 		read driver
 		external_driver=$driver
@@ -310,6 +310,12 @@ cleanup() {
 			mv $lastbackup $XFILE
 		fi
 	fi
+
+	systemctl stop egpu.service
+	systemctl disable egpu.service
+	rm $SYSTEMD_FOLDER/egpu.service
+	systemctl daemon-reload
+	systemctl reset-failed
 
 	echo -e "$SUCCESS Done... Finished cleanup"
 }

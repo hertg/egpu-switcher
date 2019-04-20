@@ -13,7 +13,8 @@ After the setup, your linux installation will at each startup check if your EGPU
 **This does not provide you with a plug-and-play functionality like you may know from Windows. If you want do connect / disconnect your EGPU, you will have to restart your computer**.
 
 # Prerequisites
-1. Install the latest proprietary drivers for your GPUs
+1. You have already authorized your Thunderbolt EGPU and are able to connect
+1. You have already installed the latest proprietary drivers for your GPUs
 
 > When installing Ubuntu 19.04, please check the box "Install third-party software for graphics and Wi-Fi hardware". After that, all required drivers will be installed automatically.
 
