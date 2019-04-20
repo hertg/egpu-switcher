@@ -118,6 +118,28 @@ is_egpu_connected() {
 	exit
 }
 
+get_driver() {
+	if [ -z "$1" ]; then
+		printf "$ERROR No argument was passed to get_driver(), this is probably a bug and not your fault.\n"
+		exit
+	fi
+
+	if [ $(echo "$1" | grep -Eic "nvidia") -gt 0 ]; then
+		echo "nvidia"
+		return
+	fi
+
+	if [ $(echo "$1" | grep -Eic "intel") -gt 0 ]; then
+		echo "intel"
+		return
+	fi
+
+	if [ $(echo "$1" | grep -Eic "amd") -gt 0 ]; then
+		echo "amdgpu"
+		return
+	fi
+}
+
 setup() {
 
 	# create the tmp dir
@@ -168,6 +190,7 @@ setup() {
 	# prompt to choose the internal gpu from the list
 	printf "Choose your preferred$GREEN INTERNAL$BLANK GPU [1-$NUM_OF_RESULTS]: "
 	read internal
+	FULL_INTERNAL=$(sed ''"$internal"'q;d' $TMP_FILE)
 	PCI_INTERNAL=$(sed ''"$internal"'q;d' $TMP_FILE | grep -Eo 'PCI\:[0-9]+\:[0-9]+\:[0-9]+')
 
 	if ! [[ $internal =~ $NUMBER_REGEX ]] || [ -z "$PCI_INTERNAL" ]; then
@@ -178,6 +201,7 @@ setup() {
 	# prompt to choose the external gpu from the list
 	printf "Choose your preferred$GREEN EXTERNAL$BLANK GPU [1-$NUM_OF_RESULTS]: "
 	read external
+	FULL_EXTERNAL=$(sed ''"$external"'q;d' $TMP_FILE)
 	PCI_EXTERNAL=$(sed ''"$external"'q;d' $TMP_FILE | grep -Eo 'PCI\:[0-9]+\:[0-9]+\:[0-9]+')
 
 	if ! [[ $external =~ $NUMBER_REGEX ]] || [ -z "$PCI_EXTERNAL" ]; then
@@ -193,11 +217,23 @@ setup() {
 
 	# create the internal xorg config file
 	cp $TMP_TEMPLATE $XFILE_INTERNAL
-	sed -i -e 's/\$BUS/'$PCI_INTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XFILE_INTERNAL
+	internal_driver=$(get_driver "$FULL_INTERNAL")
+	if [ $internal_driver == ""]; then
+		printf "$ERROR Could not parse manufacturer from \"$FULL_INTERNAL\". Please manually enter the driver to be used: "
+		read driver
+		internal_driver=$driver
+	fi
+	sed -i -e 's/\$BUS/'$PCI_INTERNAL'/g' -e 's/\$DRIVER/'$internal_driver'/g' -e 's/\$ID/Device0/g' $XFILE_INTERNAL
 
 	# create the external xorg config file
 	cp $TMP_TEMPLATE $XFILE_EGPU
-	sed -i -e 's/\$BUS/'$PCI_EXTERNAL'/g' -e 's/\$DRIVER/nvidia/g' -e 's/\$ID/Device0/g' $XFILE_EGPU
+	external_driver=$(get_driver "$FULL_EXTERNAL")
+	if [ $external_driver == ""]; then
+		printf "$ERROR Could not parse manufacturer from \"$FULL_EXTERNAL\". Please manually enter the driver to be used: "
+		read driver
+		external_driver=$driver
+	fi
+	sed -i -e 's/\$BUS/'$PCI_EXTERNAL'/g' -e 's/\$DRIVER/'$external_driver'/g' -e 's/\$ID/Device0/g' $XFILE_EGPU
 
 	# Executing the switch command to create the xorg.conf file
 	switch auto $1
