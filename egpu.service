@@ -1,0 +1,8 @@
+[Unit]
+Description=EGPU Service
+
+[Service]
+ExecStart=egpu-switcher switch auto
+
+[Install]
+WantedBy=multi-user.target

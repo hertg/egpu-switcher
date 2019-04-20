@@ -22,8 +22,8 @@ XFILE_BACKUP=$XFILE.backup
 TMP_DIR=/tmp/egpu-switcher
 TMP_FILE=$TMP_DIR/results
 TMP_TEMPLATE=/usr/share/egpu-switcher/xorg.conf.template
-INITD_SCRIPT=/etc/init.d/egpu-switcher
-INITD_RC5_SYMLINK=/etc/rc5.d/S15egpu-switcher
+SYSTEMD_TEMPLATE=/usr/share/egpu-switcher/egpu.service
+SYSTEMD_FOLDER=/etc/systemd/system/
 DATETIME=$(date '+%Y%m%d%H%M%S')
 NUMBER_REGEX='^[0-9]+$'
 
@@ -203,15 +203,9 @@ setup() {
 	switch auto $1
 
 	# setup startup script
-	touch $INITD_SCRIPT
-	chmod +x $INITD_SCRIPT
-	echo "egpu-switcher switch auto" > $INITD_SCRIPT
-	ln -sf $INITD_SCRIPT $INITD_RC5_SYMLINK
-	update-rc.d egpu-switcher defaults
-
-	if ! [ -f $INITD_SCRIPT ]; then
-		echo -e "$ERROR Could not create the init.d startup script."
-	fi
+	cp $SYSTEMD_TEMPLATE $SYSTEMD_FOLDER
+	systemctl daemon-reload
+	systemctl enable egpu.service
 
 	echo -e "$SUCCESS Done... Setup finished"
 }
@@ -270,8 +264,6 @@ cleanup() {
 	rm -rfd $TMP_DIR
 	rm -rf $XFILE_EGPU
 	rm -rf $XFILE_INTERNAL
-	rm -rf $INITD_RC5_SYMLINK
-	rm -rf $INITD_SCRIPT
 
 	# delete the xorg.conf file, if it is a symlink and restore the last backup
 	if [ -L $XFILE ]; then
