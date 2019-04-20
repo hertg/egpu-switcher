@@ -41,8 +41,8 @@ fi
 
 read_gpus() {
 	if [ -z $1 ]; then
-		printf "$INFO No argument passed to read_gpus(). Using nvidia-xconfig by default.\n"
-		set -- "nvidia-xconfig"
+		printf "$INFO Using default argument for read_gpus().\n"
+		set -- "lspci"
 	fi
 
 	if [ $1 = "nvidia-xconfig" ]; then
@@ -55,8 +55,25 @@ read_gpus() {
 	fi
 
 	if [ $1 = "lspci" ]; then
-		echo -e "$WARN method $1 not implemented yet. Exit program."
-		exit
+		lspci | grep -i -E "vga|3d" | while read -r line ; do
+			name=$(echo $line | grep -o -e "[^:]*$")
+			bus=$(echo $line | grep -o -e "^[^ ]*")
+
+			# The bus IDs in hex
+			bus1h=${bus:0:2}
+			bus2h=${bus:3:2}
+			bus3h=${bus:6:1}
+
+			# The bus IDs in dec
+			bus1d=$((16#$bus1h))
+			bus2d=$((16#$bus2h))
+			bus3d=$((16#$bus3h))
+
+			# Remove the whitespace at the beginning of the name
+			# And concatenate bus IDs
+			echo -e "${name:1} (PCI:$bus1d:$bus2d:$bus3d)" >> $TMP_FILE
+		done
+		return
 	fi
 
 	echo -e "$ERROR Unknown option \"$1\" passed to is_egpu_connected. Exit program."
@@ -69,8 +86,8 @@ is_egpu_connected() {
 	EGPU_PCI_ID=$(cat $XFILE_EGPU | grep -Ei "BusID" | grep -oEi '[0-9]+\:[0-9]+\:[0-9]+')
 
 	if [ -z $1 ]; then
-		echo -e "$INFO No argument passed to is_egpu_connected() method. Using nvidia-xconfig by default."
-		set -- "nvidia-xconfig"
+		printf "$INFO Using default argument for is_egpu_connected().\n"
+		set -- "lspci"
 	fi
 
 	if [ $1 = "nvidia-xconfig" ]; then 
@@ -82,8 +99,19 @@ is_egpu_connected() {
 	fi
 
 	if [ $1 = "lspci" ]; then
-		echo -e "$WARN method $1 not implemented yet. Exit program."
-		exit
+		bus1d=${EGPU_PCI_ID:0:1}
+		bus2d=${EGPU_PCI_ID:2:1}
+		bus3d=${EGPU_PCI_ID:4:1}
+
+		bus1h=$(printf "%02x" $bus1d)
+		bus2h=$(printf "%02x" $bus2d)
+		bus3h=$(printf "%01x" $bus3d)
+
+		if [ $(lspci | grep -iEc "$bus1h:$bus2h.$bus3h") -eq 1 ]; then
+			return 1;
+		else
+			return 0;
+		fi
 	fi
 
 	echo -e "$ERROR Unknown option \"$1\" passed to is_egpu_connected. Exit program."
