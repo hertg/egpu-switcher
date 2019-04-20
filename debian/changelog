@@ -1,20 +1,8 @@
-egpu-switcher (0.7.1) disco; urgency=medium
+egpu-switcher (0.8.0) disco; urgency=medium
 
-  * Re-release previous version for disco dingo
+  * Remove systemd service on cleanup
 
  -- Michael Hertig <info@michaelhertig.ch>  Sat, 20 Apr 2019 12:16:04 +0200
-
-egpu-switcher (0.7.0) unstable; urgency=medium
-
-  * Re-release previous version
-
- -- Michael Hertig <info@michaelhertig.ch>  Sat, 20 Apr 2019 12:14:05 +0200
-
-egpu-switcher (0.6.1) stable; urgency=medium
-
-  * remove systemd service on cleanup, update readme
-
- -- Michael Hertig <info@michaelhertig.ch>  Sat, 20 Apr 2019 12:08:04 +0200
 
 egpu-switcher (0.6.0) disco; urgency=medium
 
