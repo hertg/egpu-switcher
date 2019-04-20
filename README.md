@@ -1,18 +1,34 @@
 # egpu-switcher
 
-> **Disclaimer**\
-> Works only with NVIDIA cards and after the nvidia-drivers were installed.\
-> Not properly tested on different setups, **use at your own risk.**\
-> Latest version is only tested with Ubuntu 19.04.
+> **Disclaimer**
+> - May work only with NVIDIA cards and after the proprietary graphics drivers were installed. (It's possible that it works with AMD too, but it was never tested)
+> - Not properly tested on different distributions / hardware. **use at your own risk.**
+> - Latest version is only tested with Ubuntu 19.04.
 
-This package allows you to use your egpu and the displays directly connected to it. **There is no plug-and-play functionality**. You have to restart your computer in order to connect / disconnect your egpu.
+# Goal
+The goal of this script is to make the initial egpu setup for (new) Linux users less of a pain. With this script your X-Server configs for the different GPUs will be automatically created, you just have to choose which one is the external and which the internal graphics card.
 
-The main goal of this package is to make the initial setup easier and allowing your computer to decide **on startup** if your egpu is connected and can be used.
+After the setup, your linux installation will at each startup check if your EGPU is connected or not, and then automatically choose the right X-Server configuration in the background.
 
-## More information
-This script will try to detect your GPUs and prompt you to answer which is the internal and which the external one. It will then create a `xorg.conf.egpu` and a `xorg.conf.internal` file in your `/etc/X11` directory, with each of the GPUs defined via their BusID. 
+**This does not provide you with a plug-and-play functionality like you may know from Windows. If you want do connect / disconnect your EGPU, you will have to restart your computer**.
 
-Additionally a custom `systemd` service with the following content will be added.
+# Prerequisites
+1. Install the latest proprietary drivers for your GPUs
+
+> When installing Ubuntu 19.04, please check the box "Install third-party software for graphics and Wi-Fi hardware". After that, all required drivers will be installed automatically.
+
+> **Hint for people with hybrid graphics**\
+> I am using a Lenovo notebook with hybrid graphics (internal graphics **and** a dedicated GPU). I've experienced freezes in the Ubuntu 19.04 installer which could only be resolved by changing the display settings in the BIOS from ~~Hybrid Graphics~~ to **Discrete Graphics**. After the installation was complete, i was able to change this setting back to **Hybrid Graphics**, without any issues.
+
+# Background information
+> A backup of your current `xorg.conf` will be created, nothing gets deleted. If the script doesn't work for you, you can revert the changes by executing `egpu-switcher cleanup` or just completely uninstall the script with `apt remove --purge egpu-switcher`. This will purge all files it has created and also restore your previous `xorg.conf` file.
+
+This script will create two configuration files in your X-Server folder `/etc/X11`.
+The file `xorg.conf.egpu` holds the settings for your EGPU and the file `xorg.conf.internal` holds the settings for your internal graphics.
+
+Then a symlink `xorg.conf` will be generated which points to the corresponding config file, depending on wheter your egpu is connected or not.
+
+Additionally a custom `systemd` service with the following content will be created.
 
 */etc/systemd/system/egpu.service*
 ```bash
@@ -27,18 +43,6 @@ WantedBy=multi-user.target
 ```
 
 This will enable the automatic detection wheter your egpu is connected or not on startup.
-
-# Prerequisites
-**Only tested on Ubuntu 19.04**
-> I am using this script with my notebook, which already has a dedicated gpu. I've experienced problems when working in "Hybrid Graphics" mode, meaning that both will be activated, the integrated graphics *and* the dedicated graphics. When booting from the Ubuntu Live-CD the installer freezed multiple times. After changing the BIOS display settings from "Hybrid Graphics" to "Dedicated Graphics", the problem was gone. After successful installation of Ubuntu, the BIOS setting can be set back to "Hybrid Graphics".\
-\
-> I am using a Lenovo ThinkPad, your device will probably have different BIOS settings.
-
-Install the latest Ubuntu 19.04. You can choose the minimal installation, but make sure to check the box "Install third-party software for graphics and Wi-Fi hardware".
-
-With Ubuntu 19.04, the latest proprietary nvidia-drivers will already be installed and you won't have to tinker around with manually disabling the nouveau drivers, etc.
-
-**Just make sure that you have the proprietary nvidia drivers installed**
 
 # Install
 ```bash
@@ -60,6 +64,8 @@ $ apt remove --purge egpu-switcher
 ```
 
 # Commands
+You usually don't need these commands (apart from the `setup`, of course).
+
 ## Setup
 `egpu-switcher setup <method>`\
 Will start the setup process. 
@@ -87,9 +93,9 @@ This command will point the `xorg.conf` symlink to `xorg.conf.internal`
 This command will revert the whole `setup` process and remove all files it has created.
 Additionally the command will restore your previous `xorg.conf` that you had before running the `setup`.
 
-> This command is executed automatically while doing a `apt remove --purge egpu-switcher`.
+> This command is executed automatically when uninstalling via `apt remove --purge egpu-switcher`.
 
-# Build
+# Build (notes to myself)
 1. `sudo apt install devscripts`
 1. `sudo apt install debhelper`
 1. Update changelog: `dch`
