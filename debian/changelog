@@ -1,3 +1,9 @@
+egpu-switcher (0.6.0) disco; urgency=medium
+
+  * Automatically choose the correct GPU driver
+
+ -- Michael Hertig <info@michaelhertig.ch>  Sat, 20 Apr 2019 11:47:09 +0200
+
 egpu-switcher (0.5.0) disco; urgency=medium
 
   * Add systemd service, add lspci functionality as default
