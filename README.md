@@ -5,6 +5,8 @@
 > - Not properly tested on different distributions / hardware. **use at your own risk.**
 > - Latest version is only tested with Ubuntu 19.04.
 
+![Screenshot of setup](https://raw.githubusercontent.com/hertg/egpu-switcher/master/images/screenshot_setup.png)
+
 # Goal
 The goal of this script is to make the initial egpu setup for (new) Linux users less of a pain. With this script your X-Server configs for the different GPUs will be automatically created, you just have to choose which one is the external and which the internal graphics card.
 
