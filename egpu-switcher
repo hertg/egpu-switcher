@@ -99,10 +99,17 @@ is_egpu_connected() {
 	fi
 
 	if [ $1 = "lspci" ]; then
-		bus1d=${EGPU_PCI_ID:0:1}
-		bus2d=${EGPU_PCI_ID:2:1}
-		bus3d=${EGPU_PCI_ID:4:1}
 
+		# giving your egpu some time to actually connect
+		sleep 5s
+
+		# create an array by splitting the BUS-ID on ':'
+		busArray=(${EGPU_PCI_ID//:/ })
+		bus1d=${busArray[0]}
+		bus2d=${busArray[1]}
+		bus3d=${busArray[2]}
+
+		# convert dec to hex
 		bus1h=$(printf "%02x" $bus1d)
 		bus2h=$(printf "%02x" $bus2d)
 		bus3h=$(printf "%01x" $bus3d)
