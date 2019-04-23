@@ -1,3 +1,9 @@
+egpu-switcher (0.9.0) disco; urgency=medium
+
+  * Fix bug in detecting GPUs with double-digit BUS-IDs, add 5s sleep before detection to give the egpu enough time to connect
+
+ -- Michael Hertig <info@michaelhertig.ch>  Tue, 23 Apr 2019 21:12:50 +0200
+
 egpu-switcher (0.8.0) disco; urgency=medium
 
   * Remove systemd service on cleanup
