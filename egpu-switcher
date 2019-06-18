@@ -55,7 +55,7 @@ read_gpus() {
 	fi
 
 	if [ $1 = "lspci" ]; then
-		lspci | grep -i -E "vga|3d" | while read -r line ; do
+		lspci | grep -i -E "^[^\s]+\s+.*(vga|3d)" | while read -r line ; do
 			name=$(echo $line | grep -o -e "[^:]*$")
 			bus=$(echo $line | grep -o -e "^[^ ]*")
 
