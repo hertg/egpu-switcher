@@ -1,9 +1,10 @@
 # egpu-switcher
 
-> **Disclaimer**
-> - May work only with NVIDIA cards and after the proprietary graphics drivers were installed. (It's possible that it works with AMD too, but it was never tested)
-> - Not properly tested on different distributions / hardware. **use at your own risk.**
-> - Latest version is only tested with Ubuntu 19.04.
+> **Disclaimer**\
+> Works with NVIDIA as well as AMD cards.\
+> Tested on Ubuntu, but may work on any Linux (with X-Server) that supports `#!/bin/bash` scripts.
+>
+> For more information and user feedback, take a look at my [Thread](https://egpu.io/forums/thunderbolt-linux-setup/ubuntu-19-04-easy-to-use-setup-script-for-your-egpu/) over on egpu.io.
 
 ![Screenshot of setup](https://raw.githubusercontent.com/hertg/egpu-switcher/master/images/screenshot_setup.png)
 
@@ -16,12 +17,31 @@ After the setup, your linux installation will at each startup check if your EGPU
 
 # Prerequisites
 1. You have already authorized your Thunderbolt EGPU and are able to connect
-1. You have already installed the latest proprietary drivers for your GPUs
+1. You have already installed the latest (proprietary) drivers for your GPUs
 
 > When installing Ubuntu 19.04, please check the box "Install third-party software for graphics and Wi-Fi hardware". After that, all required drivers will be installed automatically.
 
 > **Hint for people with hybrid graphics**\
 > I am using a Lenovo notebook with hybrid graphics (internal graphics **and** a dedicated GPU). I've experienced freezes in the Ubuntu 19.04 installer which could only be resolved by changing the display settings in the BIOS from ~~Hybrid Graphics~~ to **Discrete Graphics**. After the installation was complete, i was able to change this setting back to **Hybrid Graphics**, without any issues.
+
+# Install
+```bash
+$ sudo add-apt-repository ppa:hertg/egpu-switcher
+$ sudo apt update
+$ sudo apt install egpu-switcher
+```
+
+Just start the setup with the following command, after the setup is finished, you are good to go.
+
+```bash
+$ sudo egpu-switcher setup
+```
+
+# Uninstall
+Run the following command to uninstall the package. All created files will be removed and your previous `xorg.conf` will be restored if you had one.
+```bash
+$ apt remove --purge egpu-switcher
+```
 
 # Background information
 > A backup of your current `xorg.conf` will be created, nothing gets deleted. If the script doesn't work for you, you can revert the changes by executing `egpu-switcher cleanup` or just completely uninstall the script with `apt remove --purge egpu-switcher`. This will purge all files it has created and also restore your previous `xorg.conf` file.
@@ -47,26 +67,7 @@ WantedBy=multi-user.target
 
 This will enable the automatic detection wheter your egpu is connected or not on startup.
 
-# Install
-```bash
-$ sudo add-apt-repository ppa:hertg/egpu-switcher
-$ sudo apt update
-$ sudo apt install egpu-switcher
-```
-
-Just start the setup with the following command, after the setup is finished, you are good to go.
-
-```bash
-$ sudo egpu-switcher setup
-```
-
-# Uninstall
-Run the following command to uninstall the package. All created files will be removed and your previous `xorg.conf` will be restored if you had one.
-```bash
-$ apt remove --purge egpu-switcher
-```
-
-# Commands
+# Available commands
 You usually don't need these commands (apart from the `setup`, of course).
 
 ## Setup
