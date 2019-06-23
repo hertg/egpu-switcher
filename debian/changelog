@@ -1,3 +1,15 @@
+egpu-switcher (0.10.1) disco; urgency=medium
+
+  * Needed to jump a version because of an invalid publish
+
+ -- Michael Hertig <info@michaelhertig.ch>  Sun, 23 Jun 2019 19:22:46 +0200
+
+egpu-switcher (0.10.0) disco; urgency=medium
+
+  * Fix minor bug in EGPU detection, add absolute path to systemd service 
+
+ -- Michael Hertig <info@michaelhertig.ch>  Sun, 23 Jun 2019 18:40:37 +0200
+
 egpu-switcher (0.9.0) disco; urgency=medium
 
   * Fix bug in detecting GPUs with double-digit BUS-IDs, add 5s sleep before detection to give the egpu enough time to connect
