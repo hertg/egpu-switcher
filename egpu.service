@@ -2,7 +2,7 @@
 Description=EGPU Service
 
 [Service]
-ExecStart=egpu-switcher switch auto
+ExecStart=/usr/bin/egpu-switcher switch auto
 
 [Install]
 WantedBy=multi-user.target
