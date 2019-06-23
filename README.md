@@ -8,6 +8,21 @@
 
 ![Screenshot of setup](https://raw.githubusercontent.com/hertg/egpu-switcher/master/images/screenshot_setup.png)
 
+# TL;DR
+
+Installation and setup:
+```bash
+$ sudo add-apt-repository ppa:hertg/egpu-switcher
+$ sudo apt update
+$ sudo apt install egpu-switcher
+$ sudo egpu-switcher setup
+```
+
+Uninstall:
+```bash
+$ apt remove --purge egpu-switcher
+```
+
 # Goal
 The goal of this script is to make the initial egpu setup for (new) Linux users less of a pain. With this script your X-Server configs for the different GPUs will be automatically created, you just have to choose which one is the external and which the internal graphics card.
 
