@@ -10,6 +10,7 @@
 
 # TL;DR
 
+## Ubuntu (apt)
 Installation and setup:
 ```bash
 $ sudo add-apt-repository ppa:hertg/egpu-switcher
@@ -21,6 +22,23 @@ $ sudo egpu-switcher setup
 Uninstall:
 ```bash
 $ apt remove --purge egpu-switcher
+```
+
+## Other
+Installation and setup:
+```bash
+$ git clone git@github.com:hertg/egpu-switcher.git
+$ cd egpu-switcher
+$ make install
+$ sudo egpu-switcher setup
+```
+
+Uninstall: 
+> **Warning**: Do not use this command on any version prior to 0.10.2!
+> There was a critical typo in the Makefile which would delete your `/usr/bin` folder. Please do a manual uninstall by removing the `egpu-switcher` folder in the `/usr/bin/` and the `/usr/share/` directory.
+```bash
+$ sudo egpu-switcher cleanup
+$ make uninstall
 ```
 
 # Goal

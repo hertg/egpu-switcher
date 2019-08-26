@@ -1,3 +1,9 @@
+egpu-switcher (0.10.2) disco; urgency=medium
+
+  * Fixed critical typo in Makefile which removed too many files
+
+ -- Michael Hertig <info@michaelhertig.ch>  Mon, 26 Aug 2019 21:31:53 +0200
+
 egpu-switcher (0.10.1) disco; urgency=medium
 
   * Needed to jump a version because of an invalid publish
