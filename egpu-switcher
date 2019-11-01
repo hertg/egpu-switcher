@@ -287,7 +287,7 @@ switch() {
 		fi
 	fi
 
-    if [ $1 = "egpu" ] && [ -z $(grep -e "nvidia" $XFILE_EGPU) ]; then
+    if [ $1 = "egpu" ] && [ $(grep -ce "nvidia" $XFILE_EGPU) -eq 0 ]; then
         EGPU_PCI_ID=$(cat $XFILE_EGPU | grep -Ei "BusID" | grep -oEi '[0-9]+\:[0-9]+\:[0-9]+')
 		# create an array by splitting the BUS-ID on ':'
 		busArray=(${EGPU_PCI_ID//:/ })
@@ -300,8 +300,8 @@ switch() {
 		bus3h=$(printf "%01x" $bus3d)
 		HEX_ID=$(echo $bus1h:$bus2h.$bus3h)
     	DISPLAY_ON="false"
-    	for DISP in $(cat /sys/bus/pci/devices/0000:${HEX_ID}/drm/card[0-9]*/card[0-9]*-*/enabled); do
-      		if [ ${DISP} = "enabled" ]; then
+    	for DISP in $(cat /sys/bus/pci/devices/0000:${HEX_ID}/drm/card[0-9]*/card[0-9]*-*/status); do
+      		if [ ${DISP} = "connected" ]; then
         		DISPLAY_ON="true"
       		fi
     	done
