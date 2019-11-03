@@ -301,11 +301,6 @@ switch() {
 		HEX_ID=$(echo $bus1h:$bus2h.$bus3h)
 		DISP_PATH=/sys/bus/pci/devices/0000:${HEX_ID}/drm/card[0-9]*/card[0-9]*-*/status
 		DISP_NUM=$(ls ${DISP_PATH} | grep -c status)
-    	# for DISP in $(cat /sys/bus/pci/devices/0000:${HEX_ID}/drm/card[0-9]*/card[0-9]*-*/status); do
-     #  		if [ ${DISP} = "connected" ]; then
-     #    		DISPLAY_ON="true"
-     #  		fi
-    	# done
 		if [ $(cat ${DISP_PATH} | grep -ce ^disconnected$) -eq $DISP_NUM ] && [ $DISP_NUM -gt 0 ]; then
 			echo -e "$WARN No eGPU attached display detected with open source drivers. Internal mode and setting DRI_PRIME variable are recommended for this configuration."
 			if [[ $2 = "override" ]]; then
