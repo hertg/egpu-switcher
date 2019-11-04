@@ -287,6 +287,33 @@ switch() {
 		fi
 	fi
 
+	if [ $1 = "egpu" ] && [ $(grep -ce "nvidia" $XFILE_EGPU) -eq 0 ]; then
+		EGPU_PCI_ID=$(cat $XFILE_EGPU | grep -Ei "BusID" | grep -oEi '[0-9]+\:[0-9]+\:[0-9]+')
+		# create an array by splitting the BUS-ID on ':'
+		busArray=(${EGPU_PCI_ID//:/ })
+		bus1d=${busArray[0]}
+		bus2d=${busArray[1]}
+		bus3d=${busArray[2]}
+		# convert dec to hex
+		bus1h=$(printf "%02x" $bus1d)
+		bus2h=$(printf "%02x" $bus2d)
+		bus3h=$(printf "%01x" $bus3d)
+		HEX_ID=$(echo $bus1h:$bus2h.$bus3h)
+		DISP_PATH=/sys/bus/pci/devices/0000:${HEX_ID}/drm/card[0-9]*/card[0-9]*-*/status
+		DISP_NUM=$(ls ${DISP_PATH} | grep -c status)
+		if [ $(cat ${DISP_PATH} | grep -ce ^disconnected$) -eq $DISP_NUM ] && [ $DISP_NUM -gt 0 ]; then
+			echo -e "$WARN No eGPU attached display detected with open source drivers. Internal mode and setting DRI_PRIME variable are recommended for this configuration."
+			if [[ $2 = "override" ]]; then
+				echo -e "$WARN -> Overridden: Setting eGPU mode"
+				set -- "egpu"
+			else
+				echo -e "$WARN Run 'egpu-switcher switch egpu override' to force loading eGPU mode"
+				echo -e "$WARN -> Not setting eGPU mode."
+				set -- "internal"
+			fi
+		fi
+	fi
+
 	if [ $1 = "egpu" ]; then
 		echo -e "$INFO Create symlink $GREEN$XFILE$BLANK -> $XFILE_EGPU"
 		ln -sf $XFILE_EGPU $XFILE
