@@ -299,10 +299,17 @@ switch() {
 		bus2h=$(printf "%02x" $bus2d)
 		bus3h=$(printf "%01x" $bus3d)
 		HEX_ID=$(echo $bus1h:$bus2h.$bus3h)
-		DISP_PATH=/sys/bus/pci/devices/0000:${HEX_ID}/drm/card[0-9]*/card[0-9]*-*/status
-		DISP_NUM=$(ls ${DISP_PATH} | grep -c status)
-		if [ $(cat ${DISP_PATH} | grep -ce ^disconnected$) -eq $DISP_NUM ] && [ $DISP_NUM -gt 0 ]; then
-			echo -e "$WARN No eGPU attached display detected with open source drivers. Internal mode and setting DRI_PRIME variable are recommended for this configuration."
+		DISP_PATH=/sys/bus/pci/devices/[0-9a-f:]*${HEX_ID}/drm/card[0-9]*/card[0-9]*-*/status
+		DISP_NUM=0
+		DISP_DISCONNECT=0
+		for DISP in ${DISP_PATH}; do
+			if [ -e $DISP ]; then
+				DISP_NUM=$(expr $DISP_NUM + 1)
+				DISP_DISCONNECT=$(expr $DISP_DISCONNECT + $(cat $DISP | grep -ce ^disconnected$))
+			fi
+		done
+		if [ $DISP_DISCONNECT -eq $DISP_NUM ] && [ $DISP_NUM -gt 0 ]; then
+			echo -e "$WARN No eGPU attached display detected with open source drivers. (Of $DISP_NUM eGPU outputs detected) Internal mode and setting DRI_PRIME variable are recommended for this configuration."
 			if [[ $2 = "override" ]]; then
 				echo -e "$WARN -> Overridden: Setting eGPU mode"
 				set -- "egpu"
