@@ -92,6 +92,7 @@ Additionally a custom `systemd` service with the following content will be creat
 Description=EGPU Service
 
 [Service]
+Type=oneshot
 ExecStart=egpu-switcher switch auto
 
 [Install]
