@@ -2,6 +2,7 @@
 Description=EGPU Service
 
 [Service]
+Type=oneshot
 ExecStart=/usr/bin/egpu-switcher switch auto
 
 [Install]

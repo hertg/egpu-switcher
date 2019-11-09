@@ -1,3 +1,12 @@
+egpu-switcher (0.11.0) disco; urgency=low
+
+  * Remove 'nvidia-xconfig' method of detecting GPUs
+  * Change egpu.service to Type=oneshot
+  * Make specifying the internal GPU optional (let X-Server figure it out themselves if EGPU is not connected)
+  * Save chosen GPUs to config file to prevent re-run of setup after every update
+
+ -- Michael Hertig <info@michaelhertig.ch>  Sat, 09 Nov 2019 18:40:30 +0100
+
 egpu-switcher (0.10.2) disco; urgency=medium
 
   * Fixed critical typo in Makefile which removed too many files

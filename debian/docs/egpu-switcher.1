@@ -1,0 +1,40 @@
+.TH EGPU-SWITCHER 1 2019-11-09 GNU User Manual
+.SH NAME
+egpu-switcher \- Automatically choose the correct GPU on startup
+.SH SYNOPSIS
+
+.B egpu-switcher setup
+[\-\-override]
+[\-\-noprompt]
+
+.B egpu-switcher switch
+[\-\-override]
+
+.B egpu-switcher cleanup
+[\-\-hard]
+
+.B egpu-switcher config
+
+
+.SH DESCRIPTION
+.B egpu-switcher
+Allows the end-user to define their external GPU and their internal GPU.
+After being installed, egpu-switcher runs the command 'egpu-switcher switch auto' on each startup
+before the display-manager gets started, preparing the system to use the correct GPU.
+The EGPU is only used if it is attached during the startup process. Otherwise the internal configuration will be used.
+
+.SH OPTIONS
+.TP
+.BR \-\-override
+This prevents the 'switch' command from choosing the internal GPU over the external GPU even if the external one is attached.
+In some cases, when using open-source drivers, the egpu-switcher script prevents you from switching to the external GPU
+if you have no displays directly attached to it. 
+
+.TP
+.BR \-\-noprompt
+This prevents the 'setup' command from prompting user interaction if no existing configuration file was found.
+This option is currently only used by the 'postinstall' script.
+
+.TP
+.BR \-\-hard
+Forces the 'cleanup' command to delete the configuration files too. Otherwise they will only be deleted with a purge.
