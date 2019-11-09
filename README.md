@@ -100,7 +100,7 @@ $ make uninstall
 </pre>
 
 <pre>
-<b>egpu-switcher cleanup</b>
+<b>egpu-switcher cleanup</b> [--hard]
     Remove all files egpu-switcher has created previously and restore the backup
     of previous "xorg.conf" files.
 
