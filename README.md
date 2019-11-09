@@ -1,12 +1,24 @@
 # egpu-switcher
 
 > **Disclaimer**\
-> Works with NVIDIA as well as AMD cards.\
-> Tested on Ubuntu, but may work on any Linux (with X-Server) that supports `#!/bin/bash` scripts.
+> Works with **NVIDIA** as well as **AMD** cards.\
+> Tested on Ubuntu, Arch and many other distros.
 >
-> For more information and user feedback, take a look at my [Thread](https://egpu.io/forums/thunderbolt-linux-setup/ubuntu-19-04-easy-to-use-setup-script-for-your-egpu/) over on egpu.io.
+> For more information and user feedback, take a look at my [Thread](https://egpu.io/forums/thunderbolt-linux-setup/ubuntu-19-04-easy-to-use-setup-script-for-your-egpu/) over on egpu.io or open an issue on Github.
+
+The goal of this script is to make the initial egpu setup for (new) Linux users less of a pain. With this script your X-Server configs for the different GPUs will be automatically created, you just have to choose which one is the external and which the internal graphics card.
+
+After the setup, your linux installation will at each startup check if your EGPU is connected or not, and then automatically choose the right X-Server configuration in the background.
+
+**This does not provide you with a plug-and-play functionality like you may know from Windows. If you want do connect / disconnect your EGPU, you will have to restart your computer**.
 
 ![Screenshot of setup](https://raw.githubusercontent.com/hertg/egpu-switcher/master/images/screenshot_setup.png)
+
+# Requirements
+1. Your OS is running X-Server
+1. You have at least Bash 4.x or higher installed
+1. You have already authorized your Thunderbolt EGPU and are able to connect
+1. You have already installed the latest (proprietary) drivers for your GPUs
 
 # TL;DR
 
@@ -21,7 +33,7 @@ $ sudo egpu-switcher setup
 
 Uninstall:
 ```bash
-$ apt remove --purge egpu-switcher
+$ apt remove egpu-switcher
 ```
 
 ## Other
@@ -41,43 +53,71 @@ $ sudo egpu-switcher cleanup
 $ make uninstall
 ```
 
-# Goal
-The goal of this script is to make the initial egpu setup for (new) Linux users less of a pain. With this script your X-Server configs for the different GPUs will be automatically created, you just have to choose which one is the external and which the internal graphics card.
+# Commands
+<pre>
+<b>egpu-switcher setup</b> [--override] [--noprompt]
+    This will generate your "xorg.conf.egpu" and "xorg.conf.internal" files and 
+    symlink the "xorg.conf" file to one of them.
 
-After the setup, your linux installation will at each startup check if your EGPU is connected or not, and then automatically choose the right X-Server configuration in the background.
+    It will also create the systemd service, that runs the "switch" command on each startup.
 
-**This does not provide you with a plug-and-play functionality like you may know from Windows. If you want do connect / disconnect your EGPU, you will have to restart your computer**.
+    The setup will NOT delete any of your files, if you have an existing "xorg.conf"
+    file it will be backed up to "xorg.conf.backup.{datetime}". You can later revert
+    it by executing the "cleanup" command (see below).
 
-# Prerequisites
-1. You have already authorized your Thunderbolt EGPU and are able to connect
-1. You have already installed the latest (proprietary) drivers for your GPUs
+    <b>--override</b>
+        If you have an AMD GPU or use the open-source nvidia drivers, 
+        the "switch" command will prevent you from switching to the EGPU
+        if there are no displays directly attached to it. This flag will
+        make sure to switch to the EGPU even if there are no displays attached.
 
-> When installing Ubuntu 19.04, please check the box "Install third-party software for graphics and Wi-Fi hardware". After that, all required drivers will be installed automatically.
+    <b>--noprompt</b>
+        Prevent the setup from prompting for user interaction if there is
+        no existing configuration file found. 
+        (Is currently only used by the "postinst" script)
+</pre>
 
-> **Hint for people with hybrid graphics**\
-> I am using a Lenovo notebook with hybrid graphics (internal graphics **and** a dedicated GPU). I've experienced freezes in the Ubuntu 19.04 installer which could only be resolved by changing the display settings in the BIOS from ~~Hybrid Graphics~~ to **Discrete Graphics**. After the installation was complete, i was able to change this setting back to **Hybrid Graphics**, without any issues.
+<pre>
+<b>egpu-switcher switch auto|egpu|internal</b> [--override]
+    Switches to the specified GPU (egpu|internal). If the <b>auto</b> parameter 
+    is used, the script will check if the egpu is attached and switch accordingly.
+    
+    You need to restart your computer (or display-manager) for this to take effect.
 
-# Install
-```bash
-$ sudo add-apt-repository ppa:hertg/egpu-switcher
-$ sudo apt update
-$ sudo apt install egpu-switcher
-```
+    <b>--override</b>
+        If you have an AMD GPU or use the open-source nvidia drivers, 
+        the "switch" command will prevent you from switching to the EGPU
+        if there are no displays directly attached to it. This flag will
+        make sure to switch to the EGPU even if there are no displays attached.
+</pre>
 
-Just start the setup with the following command, after the setup is finished, you are good to go.
+<pre>
+<b>egpu-switcher config</b>
+    Prompts the user to specify their external/internal GPU and saves their answer
+    to the configuration file.
+</pre>
 
-```bash
-$ sudo egpu-switcher setup
-```
+<pre>
+<b>egpu-switcher cleanup</b>
+    Remove all files egpu-switcher has created previously and restore the backup
+    of previous "xorg.conf" files.
 
-# Uninstall
-Run the following command to uninstall the package. All created files will be removed and your previous `xorg.conf` will be restored if you had one.
-```bash
-$ apt remove --purge egpu-switcher
-```
+    <b>--hard</b>
+        Remove configuration files too.
+</pre>
+
+---
+
+# Hints
+
+1. **Ubuntu 19.04 or later**\
+When installing Ubuntu 19.04 or later, please check the box "Install third-party software for graphics and Wi-Fi hardware". After that, all required drivers will be installed automatically.
+
+1. **Notebooks with hybrid graphics**\
+I am using a Lenovo notebook with hybrid graphics (internal graphics **and** a dedicated GPU). I've experienced freezes in the Ubuntu 19.04 installer which could only be resolved by changing the display settings in the BIOS from **Hybrid Graphics** to **Discrete Graphics**. After the installation was complete, i was able to change this setting back to **Hybrid Graphics**, without any issues.
 
 # Background information
-> A backup of your current `xorg.conf` will be created, nothing gets deleted. If the script doesn't work for you, you can revert the changes by executing `egpu-switcher cleanup` or just completely uninstall the script with `apt remove --purge egpu-switcher`. This will purge all files it has created and also restore your previous `xorg.conf` file.
+> A backup of your current `xorg.conf` will be created, nothing gets deleted. If the script doesn't work for you, you can revert the changes by executing `egpu-switcher cleanup` or just completely uninstall the script with `apt remove egpu-switcher`. This will remove all files it has created and also restore your previous `xorg.conf` file.
 
 This script will create two configuration files in your X-Server folder `/etc/X11`.
 The file `xorg.conf.egpu` holds the settings for your EGPU and the file `xorg.conf.internal` holds the settings for your internal graphics.
@@ -100,38 +140,6 @@ WantedBy=multi-user.target
 ```
 
 This will enable the automatic detection wheter your egpu is connected or not on startup.
-
-# Available commands
-You usually don't need these commands (apart from the `setup`, of course).
-
-## Setup
-`egpu-switcher setup <method>`\
-Will start the setup process. 
-> If no method is passed, the `lspci` will be used by default.\
-> The following methods are available: 
-> - `lspci` (recommended)
-> - `nvidia-xconfig`
-
-## Switch
-`egpu-switcher switch auto <method>`\
-This command will automatically detect if the egpu is connected and update the `xorg.conf` symlink accordingly.
-> If no method is passed, the `lspci` will be used by default.\
-> The following methods are available: 
-> - `lspci` (recommended)
-> - `nvidia-xconfig`
-
-`egpu-switcher switch egpu`\
-This command will point the `xorg.conf` symlink to `xorg.conf.egpu`
-
-`egpu-switcher switch internal`\
-This command will point the `xorg.conf` symlink to `xorg.conf.internal`
-
-## Cleanup
-`egpu-switcher cleanup`\
-This command will revert the whole `setup` process and remove all files it has created.
-Additionally the command will restore your previous `xorg.conf` that you had before running the `setup`.
-
-> This command is executed automatically when uninstalling via `apt remove --purge egpu-switcher`.
 
 # Build (notes to myself)
 1. `sudo apt install devscripts`

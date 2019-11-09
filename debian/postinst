@@ -2,4 +2,6 @@
 
 # run the noprompt setup after installation
 # the setup will only run if there are existing config files
-egpu-switcher setup --noprompt
+if [ ${1} = "configure" ]; then
+    egpu-switcher setup --noprompt
+fi
