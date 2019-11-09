@@ -60,7 +60,7 @@ function print_success() {
 }
 
 # config
-config_dir=~/.config/hertg
+config_dir=/etc/egpu-switcher
 config_file=${config_dir}/egpu-switcher.conf
 typeset -A config
 config=(
@@ -159,22 +159,20 @@ function is_egpu_connected() {
 
 # get the matching driver according to the gpu name
 function get_driver() {
-	if [ -z ${1+x} ]; then
-		print_error "No argument was passed to get_driver(), this is probably a bug and not your fault."
-		exit
-	fi
 
-	if [ $(echo "$1" | grep -Eic "nvidia") -gt 0 ]; then
+	input=${1}
+
+	if [ $(echo "${input}" | grep -Eic "nvidia") -gt 0 ]; then
 		echo "nvidia"
 		return
 	fi
 
-	if [ $(echo "$1" | grep -Eic "intel") -gt 0 ]; then
+	if [ $(echo "${input}" | grep -Eic "intel") -gt 0 ]; then
 		echo "intel"
 		return
 	fi
 
-	if [ $(echo "$1" | grep -Eic "amd") -gt 0 ]; then
+	if [ $(echo "${input}" | grep -Eic "amd") -gt 0 ]; then
 		echo "amdgpu"
 		return
 	fi
@@ -279,7 +277,10 @@ function configure() {
 	print_info "Saved new configuration to ${config_file}"
 }
 
-setup() {
+function setup() {
+
+	declare override=${1}
+	declare noprompt=${2}
 
 	# check if the template/script files can be found
 	if [ ! -f $tmp_template ]; then
@@ -288,8 +289,15 @@ setup() {
 	fi
 
 	if [ -z ${config[external_gpu]} ]; then
-		print_error "It seems like you haven't configured egpu-switcher yet. Please run 'egpu-switcher config' first."
-		exit
+		if [ ${noprompt} -eq 1 ]; then
+			print_warn "It seems like you haven't configured egpu-switcher yet. Please run 'egpu-switcher setup' first."
+			exit
+		else
+			configure
+		fi
+	else
+		print_info "Using existing configuration file at '${config_file}''."
+		print_info "If you want to reconfigure egpu-switcher, please run 'egpu-switcher config'."
 	fi
 
 	# create the internal xorg config file
@@ -305,11 +313,7 @@ setup() {
 	sed -i -e 's/\$BUS/'${config[external_gpu]}'/g' -e 's/\$DRIVER/'${config[external_driver]}'/g' -e 's/\$ID/Device0/g' $xfile_egpu
 
 	# Executing the switch command to create the xorg.conf file
-	if [ -z ${1+x} ]; then
-		switch auto
-	else
-		switch auto $1
-	fi
+	switch auto ${override}
 
 	# setup startup script
 	cp $systemd_template $systemd_folder
@@ -319,7 +323,10 @@ setup() {
 	print_success "Done... Setup finished"
 }
 
-switch() {
+function switch() {
+
+	declare mode=${1}
+	declare override=${2}
 	
 	# Check if the xorg.conf files for internal and egpu exist
 	if ! [ -f $xfile_egpu ] || ! [ -f $xfile_internal ]; then
@@ -334,18 +341,18 @@ switch() {
 	fi
 
 	# if no parameter was passed to the method
-	if [ ${1} = "auto" ]; then
+	if [ ${mode} = "auto" ]; then
 
 		print_info "Automatically detecting if egpu is connected... "
 		is_egpu_connected
 		if [ ${gpu_connected} = 1 ] ; then
-			set -- "egpu"
+			mode="egpu"
 		else
-			set -- "internal"
+			mode="internal"
 		fi
 	fi
 
-	if [ ${1} = "egpu" ] && [ $(grep -ce "nvidia" $xfile_egpu) -eq 0 ]; then
+	if [ ${mode} = "egpu" ] && [ $(grep -ce "nvidia" $xfile_egpu) -eq 0 ]; then
 		declare egpu_pci_id=$(cat $xfile_egpu | grep -Ei "BusID" | grep -oEi '[0-9]+\:[0-9]+\:[0-9]+')
 		# create an array by splitting the BUS-ID on ':'
 		declare busArray=(${egpu_pci_id//:/ })
@@ -370,49 +377,54 @@ switch() {
 		done
 		if [ $disp_disconnect -eq $disp_num ] && [ $disp_num -gt 0 ]; then
 			print_warn "No eGPU attached display detected with open source drivers. (Of ${disp_num} eGPU outputs detected) Internal mode and setting DRI_PRIME variable are recommended for this configuration."
-			if [ ! -z ${2+x} ]; then
-				if [[ ${2} = "override" ]]; then
-					print_warn "-> Overridden: Setting eGPU mode"
-					set -- "egpu"
-				else 
-					print_error "Unknown argument '${2}' passed to 'switch ${1}' method. Possible option: override"
-				fi
-			else
-				print_warn "Run 'egpu-switcher switch egpu override' to force loading eGPU mode"
+			if [ ${override} -eq 1 ]; then
+				print_warn "-> Overridden: Setting eGPU mode"
+				mode="egpu"
+			else 
+				print_warn "Run 'egpu-switcher switch egpu --override' to force loading eGPU mode"
 				print_warn "-> Not setting eGPU mode."
-				set -- "internal"
+				mode="internal"
 			fi
 		fi
 	fi
 
-	if [ ${1} = "egpu" ]; then
+	if [ ${mode} = "egpu" ]; then
 		print_info "Create symlink ${green}${xfile}${blank} -> ${xfile_egpu}"
 		ln -sf ${xfile_egpu} ${xfile}
 		return
 	fi
 
-	if [ $1 = "internal" ]; then
+	if [ ${mode} = "internal" ]; then
 		print_info "Create symlink ${green}${xfile}${blank} -> ${xfile_internal}"
 		ln -sf ${xfile_internal} ${xfile}
 		return
 	fi
 
-	print_error "The argument '${1}' that was passed to the switch() method is not valid."
+	print_error "The argument '${mode}' that was passed to the switch() method is not valid."
 }
 
-cleanup() {
+function cleanup() {
+
+	declare hard=${1}
+
 	print_info "Starting cleanup process"
-	rm -rf ${xfile_egpu}
-	rm -rf ${xfile_internal}
+	rm -f ${xfile_egpu}
+	rm -f ${xfile_internal}
 
 	# delete the xorg.conf file, if it is a symlink and restore the last backup
 	if [ -L ${xfile} ]; then
-		rm -rf ${xfile}
+		rm -f ${xfile}
 		local lastbackup=$(ls -t ${xfile_backup}.* | head -1)
-		if [ -f ${lastbackup} ]; then
+		if [ -e ${lastbackup} ]; then
 			print_info "Restoring latest backup ${green}${lastbackup}"
 			mv ${lastbackup} ${xfile}
 		fi
+	fi
+
+	if [ ${hard} -eq 1 ]; then
+		print_info "Removing configuration files (--hard)"
+		rm -f ${config_file}
+		rm -fd ${config_dir}
 	fi
 
 	systemctl stop egpu.service
@@ -424,29 +436,60 @@ cleanup() {
 	print_success "Done... Finished cleanup"
 }
 
+
 if [ $1 = "setup" ]; then
-	if [ -z ${2+x} ]; then
-		setup
-	else
-		setup ${2}
+
+	declare override=0
+	declare noprompt=0
+	if [ $# -gt 1 ]; then
+		for option in "$@"
+		do
+			if [ ${option} = "--override" ]; then
+				override=1
+			elif [ ${option} = "--noprompt" ]; then
+				noprompt=1
+			fi
+		done
 	fi
-elif [ $1 = "config" ]; then
-	configure
+	setup ${override} ${noprompt}
+
 elif [ $1 = "switch" ]; then
-	if [ -z ${2+x} ]; then
+
+	declare override=0
+	if [ $# -lt 2 ]; then
 		print_error "No argument passed to the switch method. Possible options: auto, egpu, internal"
+		exit
 	else
-		if [ -z ${3+x} ]; then
-			switch ${2}
-		else
-			switch ${2} ${3}
-		fi		
+		for option in "$@" 
+		do
+			if [ ${option} = "--override" ]; then
+				override=1
+			fi
+		done
 	fi
-	
+	switch ${2} ${override}
+
+elif [ $1 = "config" ]; then
+
+	configure
+
 elif [ $1 = "cleanup" ]; then
-	cleanup
+
+	declare hard=0
+	if [ $# -gt 1 ]; then 
+		for option in "$@"
+		do
+			if [ ${option} = "--hard" ]; then
+				hard=1
+			fi
+		done
+	fi
+
+	cleanup ${hard}
+
+
 else
-	print_error "Unknown argument '$1'.\navailable commands: setup, switch, cleanup"
+	print_error "Unknown argument '$1'.\navailable commands: setup, switch, config, cleanup"
 fi
 
 # systemctl restart display-manager.service
