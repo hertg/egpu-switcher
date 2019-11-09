@@ -6,25 +6,25 @@
 >
 > For more information and user feedback, take a look at my [Thread](https://egpu.io/forums/thunderbolt-linux-setup/ubuntu-19-04-easy-to-use-setup-script-for-your-egpu/) over on egpu.io or open an issue on Github.
 
-# Description
+## Description
 The goal of this script is to make the initial egpu setup for (new) Linux users less of a pain. With this script your X-Server configs for the different GPUs will be automatically created, you just have to choose which one is the external and which the internal graphics card.
 
 After the setup, your linux installation will at each startup check if your EGPU is connected or not, and then automatically choose the right X-Server configuration in the background.
 
 **This does not provide you with a plug-and-play functionality like you may know from Windows. If you want do connect / disconnect your EGPU, you will have to restart your computer**.
 
-# Screenshot
+## Screenshot
 ![Screenshot of setup](https://raw.githubusercontent.com/hertg/egpu-switcher/master/images/screenshot_setup.png)
 
-# Requirements
+## Requirements
 1. Your OS is running X-Server
 1. You have at least Bash 4.x or higher installed
 1. You have already authorized your Thunderbolt EGPU and are able to connect
 1. You have already installed the latest (proprietary) drivers for your GPUs
 
-# TL;DR
+## TL;DR
 
-## Ubuntu (apt)
+### Ubuntu (apt)
 Installation and setup:
 ```bash
 $ sudo add-apt-repository ppa:hertg/egpu-switcher
@@ -38,7 +38,7 @@ Uninstall:
 $ apt remove egpu-switcher
 ```
 
-## Other
+### Other
 Installation and setup:
 ```bash
 $ git clone git@github.com:hertg/egpu-switcher.git
@@ -55,7 +55,7 @@ $ sudo egpu-switcher cleanup
 $ make uninstall
 ```
 
-# Commands
+## Commands
 <pre>
 <b>egpu-switcher setup</b> [--override] [--noprompt]
     This will generate your "xorg.conf.egpu" and "xorg.conf.internal" files and 
@@ -110,7 +110,7 @@ $ make uninstall
 
 ---
 
-# Hints
+## Hints
 
 1. **Ubuntu 19.04 or later**\
 When installing Ubuntu 19.04 or later, please check the box "Install third-party software for graphics and Wi-Fi hardware". After that, all required drivers will be installed automatically.
@@ -118,7 +118,7 @@ When installing Ubuntu 19.04 or later, please check the box "Install third-party
 1. **Notebooks with hybrid graphics**\
 I am using a Lenovo notebook with hybrid graphics (internal graphics **and** a dedicated GPU). I've experienced freezes in the Ubuntu 19.04 installer which could only be resolved by changing the display settings in the BIOS from **Hybrid Graphics** to **Discrete Graphics**. After the installation was complete, i was able to change this setting back to **Hybrid Graphics**, without any issues.
 
-# Background information
+## Background information
 > A backup of your current `xorg.conf` will be created, nothing gets deleted. If the script doesn't work for you, you can revert the changes by executing `egpu-switcher cleanup` or just completely uninstall the script with `apt remove egpu-switcher`. This will remove all files it has created and also restore your previous `xorg.conf` file.
 
 This script will create two configuration files in your X-Server folder `/etc/X11`.
@@ -143,7 +143,7 @@ WantedBy=multi-user.target
 
 This will enable the automatic detection wheter your egpu is connected or not on startup.
 
-# Build (notes to myself)
+## Build (notes to myself)
 1. `sudo apt install devscripts`
 1. `sudo apt install debhelper`
 1. Update changelog: `dch`
