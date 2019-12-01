@@ -17,10 +17,11 @@ After the setup, your linux installation will at each startup check if your EGPU
 ![Screenshot of setup](https://raw.githubusercontent.com/hertg/egpu-switcher/master/images/screenshot_setup.png)
 
 ## Requirements
-1. Your OS is running X-Server
-1. You have at least Bash 4.x or higher installed
-1. You have already authorized your Thunderbolt EGPU and are able to connect
-1. You have already installed the latest (proprietary) drivers for your GPUs
+1. Your OS is running X-Server.
+1. You have at least **pciutils 3.3.x or higher** installed (check with `lspci --version`).
+1. You have at least **Bash 4.x or higher** installed.
+1. You have **already authorized your Thunderbolt EGPU** and are able to connect.
+1. You have already **installed the latest (proprietary) drivers for your GPUs**.
 
 ## TL;DR
 
