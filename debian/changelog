@@ -1,3 +1,10 @@
+egpu-switcher (0.12.0) disco; urgency=medium
+
+  * Better GPU detection with "lspci -d" (thanks to xabolcs)
+  * Prevent error on clean (thanks to maddocker)
+
+ -- Michael Hertig <info@michaelhertig.ch>  Mon, 20 Jan 2020 20:24:59 +0100
+
 egpu-switcher (0.11.1) disco; urgency=low
 
   * Previous build failed. Moved manpage to ./docs folder
