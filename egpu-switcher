@@ -412,14 +412,16 @@ function cleanup() {
 	rm -f ${xfile_internal}
 
 	# delete the xorg.conf file, if it is a symlink and restore the last backup
-	if [ -L ${xfile} ]; then
-		rm -f ${xfile}
-		local lastbackup=$(ls -t ${xfile_backup}.* | head -1)
-		if [ -e ${lastbackup} ]; then
-			print_info "Restoring latest backup ${green}${lastbackup}"
-			mv ${lastbackup} ${xfile}
-		fi
-	fi
+        if [ -L ${xfile} ]; then
+                rm -f ${xfile}
+                if [ -e ${xfile_backup}.* ]; then
+                        local lastbackup=$(ls -t ${xfile_backup}.* | head -1)
+                        print_info "Restoring latest backup ${green}${lastbackup}"
+                        mv ${lastbackup} ${xfile}
+                else
+                        print_info "Backup not found, restoring system without xorg.conf"
+                fi
+        fi
 
 	if [ ${hard} -eq 1 ]; then
 		print_info "Removing configuration files (--hard)"
