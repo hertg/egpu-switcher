@@ -1,3 +1,10 @@
+egpu-switcher (0.13.0) disco; urgency=medium
+
+  * Prevent error on cleanup if setup hasnt been executed
+  * Remove unnecessary console print
+
+ -- Michael Hertig <info@michaelhertig.ch>  Thu, 27 Feb 2020 23:33:13 +0100
+
 egpu-switcher (0.12.0) disco; urgency=medium
 
   * Better GPU detection with "lspci -d" (thanks to xabolcs)
