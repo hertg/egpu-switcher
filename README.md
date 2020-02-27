@@ -49,12 +49,14 @@ $ sudo egpu-switcher setup
 ```
 
 Uninstall: 
-> **Warning**: Do not use this command on any version prior to 0.10.2!
+> **Critical Warning**: **Do not use this command on any version prior to `0.10.2`!**\
 > There was a critical typo in the Makefile which would delete your `/usr/bin` folder. Please do a manual uninstall by removing the `egpu-switcher` folder in the `/usr/bin/` and the `/usr/share/` directory.
 ```bash
 $ sudo egpu-switcher cleanup
 $ make uninstall
 ```
+
+> **Hint**: Up until version `0.12.0` there was an [issue](https://github.com/hertg/egpu-switcher/issues/25) that the cleanup command needed the egpu-switcher to be set up for the cleanup to work. If you are having trouble to cleanup, remove or upgrade the egpu-switcher take a look at [this possible fix](https://github.com/hertg/egpu-switcher/issues/25#issuecomment-590728815).
 
 ## Commands
 <pre>
