@@ -427,11 +427,16 @@ function cleanup() {
 		rm -fd ${config_dir}
 	fi
 
-	systemctl stop egpu.service
-	systemctl disable egpu.service
-	rm ${systemd_folder}/egpu.service
-	systemctl daemon-reload
-	systemctl reset-failed
+	# only try to stop the egpu.service if its loaded. 
+	# note: using sed rather than the --value property on purpose, to support older versions of systemd
+	if [ $(sudo systemctl show -p LoadState egpu.service | sed 's/LoadState=//g') == "loaded" ]; then
+		print_info "Removing the 'egpu.service' systemd service"
+		systemctl stop egpu.service
+		systemctl disable egpu.service
+		rm ${systemd_folder}/egpu.service
+		systemctl daemon-reload
+		systemctl reset-failed
+	fi
 
 	print_success "Done... Finished cleanup"
 }
