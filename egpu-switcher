@@ -215,7 +215,7 @@ function configure() {
 
 	echo ""
 
-	printf "Would you like to define a specific$green INTERNAL$blank GPU? [y/N]: "
+	printf "Would you like to define a specific$green INTERNAL$blank GPU? (not recommended) [y/N]: "
 	read specify_internal
 	if [[ $specify_internal == "y" ]]; then
 		# prompt to choose the internal gpu from the list
