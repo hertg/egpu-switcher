@@ -371,10 +371,11 @@ function switch() {
 		declare disp_disconnect=0
 		for disp in ${disp_path}; do
 			if [ -e $disp ]; then
-				disp_num=$(expr $disp_num + 1)
-				disp_disconnect=$(expr $disp_disconnect + $(cat $disp | grep -ce ^disconnected$))
+				((disp_num = $disp_num + 1)) || true
+				((disp_disconnect = $disp_disconnect + $(cat $disp | grep -ce ^disconnected$))) || true
 			fi
 		done
+
 		if [ $disp_disconnect -eq $disp_num ] && [ $disp_num -gt 0 ]; then
 			print_warn "No eGPU attached display detected with open source drivers. (Of ${disp_num} eGPU outputs detected) Internal mode and setting DRI_PRIME variable are recommended for this configuration."
 			if [ ${override} -eq 1 ]; then
