@@ -24,6 +24,7 @@ After the setup, your linux installation will at each startup check if your EGPU
 1. You have already **installed the latest (proprietary) drivers for your GPUs**.
 
 ## TL;DR
+> **Please note**: There has been feedback that defining a specific internal GPU causes trouble in some cases (Especially when choosing *Intel Integrated Graphics*). It is therefore **not recommended** to specify the internal GPU (see #33, #28, #36, #37).
 
 ### Ubuntu (apt)
 Installation and setup:
