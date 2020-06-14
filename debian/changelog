@@ -1,3 +1,10 @@
+egpu-switcher (0.13.1) focal; urgency=medium
+
+  * Fix bug in display detection which prevented to switch to the eGPU with AMD cards (thanks to ewagner12 for the fix)
+  * Add "not recommended" hint to the "define a specific internal GPU" setup step
+
+ -- Michael Hertig <info@michaelhertig.ch>  Sun, 14 Jun 2020 13:53:25 +0200
+
 egpu-switcher (0.13.0) disco; urgency=medium
 
   * Prevent error on cleanup if setup hasnt been executed
