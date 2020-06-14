@@ -1,3 +1,9 @@
+egpu-switcher (0.14.0) focal; urgency=medium
+
+  * No code changes: Just bumped the minor version to circumvent launchpad PPA publishing issue
+
+ -- Michael Hertig <info@michaelhertig.ch>  Sun, 14 Jun 2020 15:54:14 +0200
+
 egpu-switcher (0.13.1) focal; urgency=medium
 
   * Fix bug in display detection which prevented to switch to the eGPU with AMD cards (thanks to ewagner12 for the fix)
