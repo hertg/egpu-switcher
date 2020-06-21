@@ -1,5 +1,6 @@
 [Unit]
 Description=EGPU Service
+Before=display-manager.service
 
 [Service]
 Type=oneshot
