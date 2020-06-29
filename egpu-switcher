@@ -404,6 +404,59 @@ function switch() {
 	print_error "The argument '${mode}' that was passed to the switch() method is not valid."
 }
 
+function remove() {
+	# Might want to make this block a function to return hex id, used 3 times in script now
+	declare egpu_pci_id=$(cat $xfile_egpu | grep -Ei "BusID" | grep -oEi '[0-9]+\:[0-9]+\:[0-9]+')
+	declare busArray=(${egpu_pci_id//:/ })
+	declare bus1d=${busArray[0]}
+	declare bus2d=${busArray[1]}
+	declare bus3d=${busArray[2]}
+	declare bus1h=$(printf "%02x" $bus1d)
+	declare bus2h=$(printf "%02x" $bus2d)
+	declare bus3h=$(printf "%01x" $bus3d)
+	declare hex_id=$(echo $bus1h:$bus2h.$bus3h)
+
+	# Find GPU and audio devices
+	declare device_id=$(echo ${hex_id} | cut -f 1 -d '.').
+	declare device_path=/sys/bus/pci/devices/[0-9a-f:]*${device_id}[0-9]*/remove
+
+	# Find drivers from lspci
+	if [ $(lspci -k | grep -A 3 ${hex_id} | grep -c "nvidia") -gt 0 ]; then
+		declare vga_driver=nvidia
+	elif [ $(lspci -k | grep -A 3 ${hex_id} | grep -c "amdgpu") -gt 0 ]; then
+		declare vga_driver=amdgpu
+	else
+		print_error "Neither Nvidia or AMD GPU found at Bus ID specified in xorg.conf.egpu"
+		exit
+	fi
+
+	# Do actual GPU removal
+	( trap '' HUP TERM
+		while [ "$(systemctl status display-manager | awk '/Active:/{print$2}')" \
+			= "active" ]; do
+			sleep 1
+		done
+
+		if [ ${vga_driver} = "nvidia" ]; then
+			for drivers in nvidia_uvm nvidia_drm nvidia_modeset nvidia; do
+				modprobe -r ${drivers}
+			done
+		else
+			modprobe -r ${vga_driver}
+		fi
+
+		for dev_paths in ${device_path}; do
+			if [ -e $dev_paths ]; then
+				echo 1 > $dev_paths
+			fi
+		done
+
+		modprobe ${vga_driver}
+
+		systemctl start display-manager.service ) &
+	systemctl stop display-manager.service
+}
+
 function cleanup() {
 
 	declare hard=${1}
@@ -493,9 +546,17 @@ elif [ $1 = "cleanup" ]; then
 
 	cleanup ${hard}
 
+elif [ $1 = "remove" ]; then
+
+	print_warn "This will switch to internal mode, remove the eGPU and log out all users. Continue? [y/N]: "
+	read specify_remove
+	if [[ $specify_remove == "y" ]]; then
+		switch internal 0
+		remove
+	fi
 
 else
-	print_error "Unknown argument '$1'.\navailable commands: setup, switch, config, cleanup"
+	print_error "Unknown argument '$1'.\navailable commands: setup, switch, config, cleanup, remove"
 fi
 
 # systemctl restart display-manager.service
