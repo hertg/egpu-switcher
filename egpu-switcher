@@ -434,7 +434,9 @@ function remove() {
 			fi
 		done
 
-		modprobe ${vga_driver}
+		if [ $(lspci -k | grep -c ${vga_driver}) -gt 0 ]; then
+			modprobe ${vga_driver}
+		fi
 
 		systemctl start display-manager.service ) &
 	systemctl stop display-manager.service
