@@ -150,6 +150,7 @@ function is_egpu_connected() {
 	if [ $(lspci | grep -iEc "$bus1h:$bus2h.$bus3h") -eq 1 ]; then
 		print_info "EGPU is ${green}connected${blank}."
 		gpu_connected=1
+		hex_id=$bus1h:$bus2h.$bus3h
 		#return 1
 	else
 		print_info "EGPU is ${red}disconnected${blank}."
@@ -352,20 +353,12 @@ function switch() {
 		fi
 	fi
 
-	if [ ${mode} = "egpu" ] && [ $(grep -ce "nvidia" $xfile_egpu) -eq 0 ]; then
-		declare egpu_pci_id=$(cat $xfile_egpu | grep -Ei "BusID" | grep -oEi '[0-9]+\:[0-9]+\:[0-9]+')
-		# create an array by splitting the BUS-ID on ':'
-		declare busArray=(${egpu_pci_id//:/ })
-		declare bus1d=${busArray[0]}
-		declare bus2d=${busArray[1]}
-		declare bus3d=${busArray[2]}
+	if [ ${mode} = "egpu" ] && [ $(cat $xfile_egpu | grep -Ei "Driver" | cut -f 2 -d \") != "nvidia" ]; then
 
-		# convert dec to hex
-		declare bus1h=$(printf "%02x" $bus1d)
-		declare bus2h=$(printf "%02x" $bus2d)
-		declare bus3h=$(printf "%01x" $bus3d)
+		if [ -z ${hex_id+x} ]; then
+			is_egpu_connected
+		fi
 		
-		declare hex_id=$(echo $bus1h:$bus2h.$bus3h)
 		declare disp_path=/sys/bus/pci/devices/[0-9a-f:]*${hex_id}/drm/card[0-9]*/card[0-9]*-*/status
 		declare disp_num=0
 		declare disp_disconnect=0
@@ -405,30 +398,20 @@ function switch() {
 }
 
 function remove() {
-	# Might want to make this block a function to return hex id, used 3 times in script now
-	declare egpu_pci_id=$(cat $xfile_egpu | grep -Ei "BusID" | grep -oEi '[0-9]+\:[0-9]+\:[0-9]+')
-	declare busArray=(${egpu_pci_id//:/ })
-	declare bus1d=${busArray[0]}
-	declare bus2d=${busArray[1]}
-	declare bus3d=${busArray[2]}
-	declare bus1h=$(printf "%02x" $bus1d)
-	declare bus2h=$(printf "%02x" $bus2d)
-	declare bus3h=$(printf "%01x" $bus3d)
-	declare hex_id=$(echo $bus1h:$bus2h.$bus3h)
+
+	if [ -z ${hex_id+x} ]; then
+		is_egpu_connected
+	fi
+
+	if [ $gpu_connected = 0 ]; then
+		print_error "No eGPU detected at BusID specified in xorg.conf.egpu. Stopping removal."
+		exit
+	fi
 
 	# Find GPU and audio devices
 	declare device_id=$(echo ${hex_id} | cut -f 1 -d '.').
 	declare device_path=/sys/bus/pci/devices/[0-9a-f:]*${device_id}[0-9]*/remove
-
-	# Find drivers from lspci
-	if [ $(lspci -k | grep -A 3 ${hex_id} | grep -c "nvidia") -gt 0 ]; then
-		declare vga_driver=nvidia
-	elif [ $(lspci -k | grep -A 3 ${hex_id} | grep -c "amdgpu") -gt 0 ]; then
-		declare vga_driver=amdgpu
-	else
-		print_error "Neither Nvidia or AMD GPU found at Bus ID specified in xorg.conf.egpu"
-		exit
-	fi
+	declare vga_driver=$(cat $xfile_egpu | grep -Ei "Driver" | cut -f 2 -d \")
 
 	# Do actual GPU removal
 	( trap '' HUP TERM
@@ -548,7 +531,7 @@ elif [ $1 = "cleanup" ]; then
 
 elif [ $1 = "remove" ]; then
 
-	print_warn "This will switch to internal mode, remove the eGPU and log out all users. Continue? [y/N]: "
+	print_warn "This will switch to internal mode, remove the eGPU PCIe addresses and log out all users. Continue? [y/N]: "
 	read specify_remove
 	if [[ $specify_remove == "y" ]]; then
 		switch internal 0
