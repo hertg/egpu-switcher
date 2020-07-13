@@ -421,6 +421,7 @@ function remove() {
 		done
 
 		if [ ${vga_driver} = "nvidia" ]; then
+			systemctl stop nvidia-persistenced.service
 			for drivers in nvidia_uvm nvidia_drm nvidia_modeset nvidia; do
 				modprobe -r ${drivers}
 			done
