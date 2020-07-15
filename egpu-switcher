@@ -422,10 +422,20 @@ function remove() {
 
 		if [ ${vga_driver} = "nvidia" ]; then
 			systemctl stop nvidia-persistenced.service
+			if [ $(lsmod | grep "nvidia_uvm " | awk '{print $3}') -gt 0 ] || [ $(lsmod | grep "nvidia_drm " | awk '{print $3}') -gt 0 ]; then
+				systemctl start display-manager.service
+				print_error "Driver still in use. Check for applications like Folding@Home running in the background. Stopping removal."
+				exit
+			fi
 			for drivers in nvidia_uvm nvidia_drm nvidia_modeset nvidia; do
 				modprobe -r ${drivers}
 			done
 		else
+			if [ $(lsmod | grep "${vga_driver} " | awk '{print $3}') -gt 0 ]; then
+				systemctl start display-manager.service
+				print_error "Driver still in use. Check for applications like Folding@Home running in the background. Stopping removal."
+				exit
+			fi
 			modprobe -r ${vga_driver}
 		fi
 
@@ -437,6 +447,10 @@ function remove() {
 
 		if [ $(lspci -k | grep -c ${vga_driver}) -gt 0 ]; then
 			modprobe ${vga_driver}
+			if [ ${vga_driver} = "nvidia" ]; then
+				modprobe nvidia_drm
+			fi
+			sleep 1
 		fi
 
 		systemctl start display-manager.service ) &
