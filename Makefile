@@ -17,7 +17,7 @@ install:
 	gzip ${DESTDIR}${MANDIR}/egpu-switcher.1
 
 uninstall:
-	rm -fsudo  ${DESTDIR}${BINDIR}/egpu-switcher
+	rm -f ${DESTDIR}${BINDIR}/egpu-switcher
 	rm -rfd ${DESTDIR}${SHAREDIR}/egpu-switcher
 	rm -f ${DESTDIR}${MANDIR}/egpu-switcher.1*
 	
