@@ -1,16 +1,23 @@
 BINDIR := /usr/bin
 SHAREDIR := /usr/share
+MANDIR := /usr/share/man/man1
 
 all:
 
 install:
 	mkdir -p ${DESTDIR}${BINDIR}
 	cp egpu-switcher ${DESTDIR}${BINDIR}/
+	
 	mkdir -p ${DESTDIR}${SHAREDIR}/egpu-switcher
 	cp xorg.conf.template ${DESTDIR}${SHAREDIR}/egpu-switcher/
 	cp egpu.service ${DESTDIR}${SHAREDIR}/egpu-switcher/
+	
+	mkdir -p ${DESTDIR}${MANDIR}
+	cp docs/egpu-switcher.1 ${DESTDIR}${MANDIR}/
+	gzip ${DESTDIR}${MANDIR}/egpu-switcher.1
 
 uninstall:
-	rm -rfd ${DESTDIR}${BINDIR}/egpu-switcher
+	rm -fsudo  ${DESTDIR}${BINDIR}/egpu-switcher
 	rm -rfd ${DESTDIR}${SHAREDIR}/egpu-switcher
+	rm -f ${DESTDIR}${MANDIR}/egpu-switcher.1*
 	
