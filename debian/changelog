@@ -1,3 +1,11 @@
+egpu-switcher (0.15.0) focal; urgency=medium
+
+  * Update systemd service, hopefully fixing some timing issues on bootup
+  * Add "egpu-switcher remove" method to remove eGPU without a reboot (experimental)
+  * Update manpages
+
+ -- Michael Hertig <info@michaelhertig.ch>  Sun, 02 Aug 2020 14:15:15 +0200
+
 egpu-switcher (0.14.0) focal; urgency=medium
 
   * No code changes: Just bumped the minor version to circumvent launchpad PPA publishing issue
