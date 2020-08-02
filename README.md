@@ -58,12 +58,14 @@ $ make uninstall
 ## Commands
 <pre>
 <b>egpu-switcher setup</b> [--override] [--noprompt]
-    This will generate the "xorg.conf.egpu" and "xorg.conf.internal" files and symlink the "xorg.conf" file to one of them.
+    This will generate the "xorg.conf.egpu" and "xorg.conf.internal" files and
+    symlink the "xorg.conf" file to one of them.
     
     It will also create the systemd service, that runs the "switch" command on each bootup.
     
     This will NOT delete any already existing files. If an "xorg.conf" file already exists, 
-    it will be backed up to "xorg.conf.backup.{datetime}". This can later be reverted by executing the "cleanup" command.
+    it will be backed up to "xorg.conf.backup.{datetime}". This can later be reverted by
+    executing the "cleanup" command.
 
     <b>--override</b>
         If an AMD GPU or open-source NVIDIA drivers are used, the "switch" command 
@@ -72,13 +74,13 @@ $ make uninstall
 
     <b>--noprompt</b>
         Prevent the setup from prompting for user interaction if there is
-        no existing configuration file found. 
-        (Is currently only used by the "postinst" script)
+        no existing configuration file found. (Is currently only used by the "postinst" script)
 </pre>
 
 <pre>
 <b>egpu-switcher switch auto|egpu|internal</b> [--override]
-    Switches to the specified GPU. if the \fIauto\fR parameter is used, the script will check if the eGPU is attached and switch accordingly. 
+    Switches to the specified GPU. if the <u>auto</u> parameter is used, the script will check if 
+    the eGPU is attached and switch accordingly. 
     
     The computer (or display-manager) needs to be restarted for this to take effect.
 
