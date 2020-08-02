@@ -150,6 +150,7 @@ function is_egpu_connected() {
 	if [ $(lspci | grep -iEc "$bus1h:$bus2h.$bus3h") -eq 1 ]; then
 		print_info "EGPU is ${green}connected${blank}."
 		gpu_connected=1
+		hex_id=$bus1h:$bus2h.$bus3h
 		#return 1
 	else
 		print_info "EGPU is ${red}disconnected${blank}."
@@ -352,20 +353,12 @@ function switch() {
 		fi
 	fi
 
-	if [ ${mode} = "egpu" ] && [ $(grep -ce "nvidia" $xfile_egpu) -eq 0 ]; then
-		declare egpu_pci_id=$(cat $xfile_egpu | grep -Ei "BusID" | grep -oEi '[0-9]+\:[0-9]+\:[0-9]+')
-		# create an array by splitting the BUS-ID on ':'
-		declare busArray=(${egpu_pci_id//:/ })
-		declare bus1d=${busArray[0]}
-		declare bus2d=${busArray[1]}
-		declare bus3d=${busArray[2]}
+	if [ ${mode} = "egpu" ] && [ $(cat $xfile_egpu | grep -Ei "Driver" | cut -f 2 -d \") != "nvidia" ]; then
 
-		# convert dec to hex
-		declare bus1h=$(printf "%02x" $bus1d)
-		declare bus2h=$(printf "%02x" $bus2d)
-		declare bus3h=$(printf "%01x" $bus3d)
+		if [ -z ${hex_id+x} ]; then
+			is_egpu_connected
+		fi
 		
-		declare hex_id=$(echo $bus1h:$bus2h.$bus3h)
 		declare disp_path=/sys/bus/pci/devices/[0-9a-f:]*${hex_id}/drm/card[0-9]*/card[0-9]*-*/status
 		declare disp_num=0
 		declare disp_disconnect=0
@@ -402,6 +395,66 @@ function switch() {
 	fi
 
 	print_error "The argument '${mode}' that was passed to the switch() method is not valid."
+}
+
+function remove() {
+
+	if [ -z ${hex_id+x} ]; then
+		is_egpu_connected
+	fi
+
+	if [ $gpu_connected = 0 ]; then
+		print_error "No eGPU detected at BusID specified in xorg.conf.egpu. Stopping removal."
+		exit
+	fi
+
+	# Find GPU and audio devices
+	declare device_id=$(echo ${hex_id} | cut -f 1 -d '.').
+	declare device_path=/sys/bus/pci/devices/[0-9a-f:]*${device_id}[0-9]*/remove
+	declare vga_driver=$(cat $xfile_egpu | grep -Ei "Driver" | cut -f 2 -d \")
+
+	# Do actual GPU removal
+	( trap '' HUP TERM
+		while [ "$(systemctl status display-manager | awk '/Active:/{print$2}')" \
+			= "active" ]; do
+			sleep 1
+		done
+
+		if [ ${vga_driver} = "nvidia" ]; then
+			systemctl stop nvidia-persistenced.service
+			if [ $(lsmod | grep "nvidia_uvm " | awk '{print $3}') -gt 0 ] || [ $(lsmod | grep "nvidia_drm " | awk '{print $3}') -gt 0 ]; then
+				systemctl start display-manager.service
+				print_error "Driver still in use. Check for applications like Folding@Home running in the background. Stopping removal."
+				exit
+			fi
+			for drivers in nvidia_uvm nvidia_drm nvidia_modeset nvidia; do
+				modprobe -r ${drivers}
+			done
+		else
+			if [ $(lsmod | grep "${vga_driver} " | awk '{print $3}') -gt 0 ]; then
+				systemctl start display-manager.service
+				print_error "Driver still in use. Check for applications like Folding@Home running in the background. Stopping removal."
+				exit
+			fi
+			modprobe -r ${vga_driver}
+		fi
+
+		for dev_paths in ${device_path}; do
+			if [ -e $dev_paths ]; then
+				echo 1 > $dev_paths
+			fi
+		done
+
+		if [ $(lspci -k | grep -c ${vga_driver}) -gt 0 ]; then
+			modprobe ${vga_driver}
+			if [ ${vga_driver} = "nvidia" ]; then
+				modprobe nvidia_drm
+			fi
+			sleep 1
+		fi
+
+		systemctl start display-manager.service ) &
+	systemctl stop display-manager.service
 }
 
 function cleanup() {
@@ -493,9 +546,17 @@ elif [ $1 = "cleanup" ]; then
 
 	cleanup ${hard}
 
+elif [ $1 = "remove" ]; then
+
+	print_warn "This will switch to internal mode, remove the eGPU PCIe addresses and log out all users. Continue? [y/N]: "
+	read specify_remove
+	if [[ $specify_remove == "y" ]]; then
+		switch internal 0
+		remove
+	fi
 
 else
-	print_error "Unknown argument '$1'.\navailable commands: setup, switch, config, cleanup"
+	print_error "Unknown argument '$1'.\navailable commands: setup, switch, config, cleanup, remove"
 fi
 
 # systemctl restart display-manager.service
