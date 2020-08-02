@@ -1,10 +1,11 @@
 [Unit]
 Description=EGPU Service
 Before=display-manager.service
+After=bolt.service
 
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/egpu-switcher switch auto
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical.target

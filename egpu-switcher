@@ -133,9 +133,6 @@ function is_egpu_connected() {
 	# read pci id from xorg.conf.egpu
 	declare egpu_pci_id=$(cat $xfile_egpu | grep -Ei "BusID" | grep -oEi '[0-9]+\:[0-9]+\:[0-9]+')
 
-	# giving your egpu some time to actually connect
-	sleep 5s
-
 	# create an array by splitting the BUS-ID on ':'
 	declare busArray=(${egpu_pci_id//:/ })
 	declare bus1d=${busArray[0]}
