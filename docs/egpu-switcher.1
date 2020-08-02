@@ -7,7 +7,7 @@ egpu-switcher \- Automatically choose the correct GPU on startup
 [\-\-override]
 [\-\-noprompt]
 
-.B egpu-switcher switch
+.B egpu-switcher switch auto|egpu|internal
 [\-\-override]
 
 .B egpu-switcher cleanup
@@ -15,26 +15,56 @@ egpu-switcher \- Automatically choose the correct GPU on startup
 
 .B egpu-switcher config
 
+.B egpu-switcher remove
+(experimental)
+
 
 .SH DESCRIPTION
 .B egpu-switcher
 Allows the end-user to define their external GPU and their internal GPU.
 After being installed, egpu-switcher runs the command 'egpu-switcher switch auto' on each startup
 before the display-manager gets started, preparing the system to use the correct GPU.
-The EGPU is only used if it is attached during the startup process. Otherwise the internal configuration will be used.
+The eGPU is only used if it is attached during the startup process. Otherwise the internal configuration will be used.
 
-.SH OPTIONS
+.SH COMMANDS
 .TP
-.BR \-\-override
-This prevents the 'switch' command from choosing the internal GPU over the external GPU even if the external one is attached.
-In some cases, when using open-source drivers, the egpu-switcher script prevents you from switching to the external GPU
-if you have no displays directly attached to it. 
+.BR "setup [--override] [--noprompt]"
+This will generate the "xorg.conf.egpu" and "xorg.conf.internal" files and symlink the "xorg.conf" file to one of them.
+It will also create the systemd service, that runs the "switch" command on each bootup.
+This will NOT delete any already existing files. If an "xorg.conf" file already exists, 
+it will be backed up to "xorg.conf.backup.{datetime}". This can later be reverted by executing the "cleanup" command.
+
+.BR "--override"
+If an AMD GPU or open-source NVIDIA drivers are used, the "switch" command 
+will prevent from switching to the eGPU if there are no displays directly attached to it. 
+This flag will make sure to switch to the EGPU even if there are no displays attached.
+
+.BR "--noprompt"
+Prevent the setup from prompting for user interaction if there is no existing 
+configuration file found. (Is currently only used by the "postinst" script)
 
 .TP
-.BR \-\-noprompt
-This prevents the 'setup' command from prompting user interaction if no existing configuration file was found.
-This option is currently only used by the 'postinstall' script.
+.BR "switch auto|egpu|internal [--override]"
+Switches to the specified GPU. if the \fIauto\fR parameter is used, the script will check if the eGPU is 
+attached and switch accordingly. The computer (or display-manager) needs to be restarted for this to take effect.
+
+.BR "--override"
+If an AMD GPU or open-source NVIDIA drivers are used, the "switch" command 
+will prevent from switching to the eGPU if there are no displays directly attached to it. 
+This flag will make sure to switch to the EGPU even if there are no displays attached.
 
 .TP
-.BR \-\-hard
-Forces the 'cleanup' command to delete the configuration files too. Otherwise they will only be deleted with a purge.
+.BR "cleanup [--hard]"
+Remove all files egpu-switcher has created previously and restore the backup of previous "xorg.conf" files.
+
+.BR "--hard"
+Remove configuration files too.
+
+.TP
+.BR "config"
+Prompts the user to specify their external/internal GPU and saves their answer to the configuration file.
+
+.TP
+.BR "remove (experimental)"
+Allows the user to remove their eGPU without a complete reboot.
+This method will still restart the display-manager, and therefore terminate all its child-processes.

@@ -1,17 +1,13 @@
 # egpu-switcher
+Distribution agnostic script that works with **NVIDIA** and **AMD** cards.
 
-> **Disclaimer**\
-> Works with **NVIDIA** as well as **AMD** cards.\
-> Tested on Ubuntu, Arch and many other distros.
->
-> For more information and user feedback, take a look at my [Thread](https://egpu.io/forums/thunderbolt-linux-setup/ubuntu-19-04-easy-to-use-setup-script-for-your-egpu/) over on egpu.io or open an issue on Github.
+> *For more information and user feedback, take a look at my [Thread](https://egpu.io/forums/thunderbolt-linux-setup/ubuntu-19-04-easy-to-use-setup-script-for-your-egpu/) over on egpu.io or open an issue on Github.*
 
 ## Description
-The goal of this script is to make the initial egpu setup for (new) Linux users less of a pain. With this script your X-Server configs for the different GPUs will be automatically created, you just have to choose which one is the external and which the internal graphics card.
+The goal of this script is to lower the barrier for Linux users to use their eGPU on the Linux Desktop.
+An interactive setup allows the user to choose their external GPU, which will then be automatically chosen as the primary GPU if it's connected on bootup.
 
-After the setup, your linux installation will at each startup check if your EGPU is connected or not, and then automatically choose the right X-Server configuration in the background.
-
-**This does not provide you with a plug-and-play functionality like you may know from Windows. If you want do connect / disconnect your EGPU, you will have to restart your computer**.
+**This does not provide you with a plug-and-play functionality like you may know from Windows.<br> You still need to reboot your computer in order to connect / disconnect your eGPU.**.
 
 ## Screenshot
 ![Screenshot of setup](https://raw.githubusercontent.com/hertg/egpu-switcher/master/images/screenshot_setup.png)
@@ -24,7 +20,7 @@ After the setup, your linux installation will at each startup check if your EGPU
 1. You have already **installed the latest (proprietary) drivers for your GPUs**.
 
 ## TL;DR
-> **Please note**: There has been feedback that defining a specific internal GPU causes trouble in some cases (Especially when choosing *Intel Integrated Graphics*). It is therefore **not recommended** to specify the internal GPU (see #33, #28, #36, #37).
+> **Please note**: There has been feedback that defining a specific internal GPU causes trouble in some cases (Especially when choosing *Intel Integrated Graphics*). It is therefore **not recommended** to specify the internal GPU specifically (see [#33](https://github.com/hertg/egpu-switcher/issues/33), [#28](https://github.com/hertg/egpu-switcher/issues/28), [#36](https://github.com/hertg/egpu-switcher/issues/36), [#37](https://github.com/hertg/egpu-switcher/issues/37)).
 
 ### Ubuntu (apt)
 Installation and setup:
@@ -62,20 +58,17 @@ $ make uninstall
 ## Commands
 <pre>
 <b>egpu-switcher setup</b> [--override] [--noprompt]
-    This will generate your "xorg.conf.egpu" and "xorg.conf.internal" files and 
-    symlink the "xorg.conf" file to one of them.
-
-    It will also create the systemd service, that runs the "switch" command on each startup.
-
-    The setup will NOT delete any of your files, if you have an existing "xorg.conf"
-    file it will be backed up to "xorg.conf.backup.{datetime}". You can later revert
-    it by executing the "cleanup" command (see below).
+    This will generate the "xorg.conf.egpu" and "xorg.conf.internal" files and symlink the "xorg.conf" file to one of them.
+    
+    It will also create the systemd service, that runs the "switch" command on each bootup.
+    
+    This will NOT delete any already existing files. If an "xorg.conf" file already exists, 
+    it will be backed up to "xorg.conf.backup.{datetime}". This can later be reverted by executing the "cleanup" command.
 
     <b>--override</b>
-        If you have an AMD GPU or use the open-source nvidia drivers, 
-        the "switch" command will prevent you from switching to the EGPU
-        if there are no displays directly attached to it. This flag will
-        make sure to switch to the EGPU even if there are no displays attached.
+        If an AMD GPU or open-source NVIDIA drivers are used, the "switch" command 
+        will prevent from switching to the eGPU if there are no displays directly attached to it. 
+        This flag will make sure to switch to the EGPU even if there are no displays attached.
 
     <b>--noprompt</b>
         Prevent the setup from prompting for user interaction if there is
@@ -85,22 +78,14 @@ $ make uninstall
 
 <pre>
 <b>egpu-switcher switch auto|egpu|internal</b> [--override]
-    Switches to the specified GPU (egpu|internal). If the <b>auto</b> parameter 
-    is used, the script will check if the egpu is attached and switch accordingly.
+    Switches to the specified GPU. if the \fIauto\fR parameter is used, the script will check if the eGPU is attached and switch accordingly. 
     
-    You need to restart your computer (or display-manager) for this to take effect.
+    The computer (or display-manager) needs to be restarted for this to take effect.
 
     <b>--override</b>
-        If you have an AMD GPU or use the open-source nvidia drivers, 
-        the "switch" command will prevent you from switching to the EGPU
-        if there are no displays directly attached to it. This flag will
-        make sure to switch to the EGPU even if there are no displays attached.
-</pre>
-
-<pre>
-<b>egpu-switcher config</b>
-    Prompts the user to specify their external/internal GPU and saves their answer
-    to the configuration file.
+        If an AMD GPU or open-source NVIDIA drivers are used, the "switch" command 
+        will prevent from switching to the eGPU if there are no displays directly attached to it. 
+        This flag will make sure to switch to the EGPU even if there are no displays attached.
 </pre>
 
 <pre>
@@ -110,6 +95,18 @@ $ make uninstall
 
     <b>--hard</b>
         Remove configuration files too.
+</pre>
+
+<pre>
+<b>egpu-switcher config</b>
+    Prompts the user to specify their external/internal GPU and saves their answer
+    to the configuration file.
+</pre>
+
+<pre>
+<b>egpu-switcher remove</b>
+    Allows the user to remove their eGPU without a complete reboot.
+    This method will still restart the display-manager, and therefore terminate all its child-processes.
 </pre>
 
 ---
@@ -136,13 +133,15 @@ Additionally a custom `systemd` service with the following content will be creat
 ```bash
 [Unit]
 Description=EGPU Service
+Before=display-manager.service
+After=bolt.service
 
 [Service]
 Type=oneshot
-ExecStart=egpu-switcher switch auto
+ExecStart=/usr/bin/egpu-switcher switch auto
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical.target
 ```
 
 This will enable the automatic detection wheter your egpu is connected or not on startup.
