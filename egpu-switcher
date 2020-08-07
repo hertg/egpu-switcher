@@ -144,7 +144,7 @@ function is_egpu_connected() {
 	declare bus2h=$(printf "%02x" $bus2d)
 	declare bus3h=$(printf "%01x" $bus3d)
 
-	if [ $(lspci | grep -iEc "$bus1h:$bus2h.$bus3h.*VGA compatible controller.*") -eq 1 ]; then
+	if [ $( (lspci -d ::0300 && lspci -d ::0302) | grep -iEc "$bus1h:$bus2h.$bus3h") -eq 1 ]; then
 		print_info "EGPU is ${green}connected${blank}."
 		gpu_connected=1
 		hex_id=$bus1h:$bus2h.$bus3h
