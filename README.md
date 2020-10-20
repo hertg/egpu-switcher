@@ -3,6 +3,18 @@ Distribution agnostic script that works with **NVIDIA** and **AMD** cards.
 
 > *For more information and user feedback, take a look at my [Thread](https://egpu.io/forums/thunderbolt-linux-setup/ubuntu-19-04-easy-to-use-setup-script-for-your-egpu/) over on egpu.io or open an issue on Github.*
 
+- [Description](#description)
+- [Screenshot](#screenshot)
+- [Requirements](#requirements)
+- [Installation](#installation)
+  - [Ubuntu (apt)](#ubuntu-apt)
+  - [Other](#other)
+- [Commands](#commands)
+- [Troubleshooting](#troubleshooting)
+- [Background Information](#background-information)
+
+---
+
 ## Description
 The goal of this script is to lower the barrier for Linux users to use their eGPU on the Linux Desktop.
 An interactive setup allows the user to choose their external GPU, which will then be automatically chosen as the primary GPU if it's connected on bootup.
@@ -19,8 +31,9 @@ An interactive setup allows the user to choose their external GPU, which will th
 1. You have **already authorized your Thunderbolt EGPU** and are able to connect.
 1. You have already **installed the latest (proprietary) drivers for your GPUs**.
 
-## TL;DR
-> **Please note**: There has been feedback that defining a specific internal GPU causes trouble in some cases (Especially when choosing *Intel Integrated Graphics*). It is therefore **not recommended** to specify the internal GPU specifically (see [#33](https://github.com/hertg/egpu-switcher/issues/33), [#28](https://github.com/hertg/egpu-switcher/issues/28), [#36](https://github.com/hertg/egpu-switcher/issues/36), [#37](https://github.com/hertg/egpu-switcher/issues/37)).
+---
+
+## Installation
 
 ### Ubuntu (apt)
 Installation and setup:
@@ -53,7 +66,7 @@ $ sudo egpu-switcher cleanup
 $ make uninstall
 ```
 
-> **Hint**: Up until version `0.12.0` there was an [issue](https://github.com/hertg/egpu-switcher/issues/25) that the cleanup command needed the egpu-switcher to be set up for the cleanup to work. If you are having trouble to cleanup, remove or upgrade the egpu-switcher take a look at [this possible fix](https://github.com/hertg/egpu-switcher/issues/25#issuecomment-590728815).
+---
 
 ## Commands
 <pre>
@@ -116,6 +129,8 @@ $ make uninstall
 ## Troubleshooting
 If you run into problems, please have a look at [TROUBLESHOOT.md](https://github.com/hertg/egpu-switcher/blob/master/TROUBLESHOOT.md) before reporting any issues.
 
+---
+
 ## Background information
 > A backup of your current `xorg.conf` will be created, nothing gets deleted. If the script doesn't work for you, you can revert the changes by executing `egpu-switcher cleanup` or just completely uninstall the script with `apt remove egpu-switcher`. This will remove all files it has created and also restore your previous `xorg.conf` file.
 
@@ -142,10 +157,3 @@ WantedBy=graphical.target
 ```
 
 This will enable the automatic detection wheter your egpu is connected or not on startup.
-
-## Build (notes to myself)
-1. `sudo apt install devscripts`
-1. `sudo apt install debhelper`
-1. Update changelog: `dch`
-1. Build: `debuild -S | tee /tmp/debuild.log 2>&1`
-1. Upload to ppa: `dput ppa:hertg/egpu-switcher egpu-switcher_X.X.X_source.changes`
