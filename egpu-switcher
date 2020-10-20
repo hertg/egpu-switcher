@@ -144,15 +144,33 @@ function is_egpu_connected() {
 	declare bus2h=$(printf "%02x" $bus2d)
 	declare bus3h=$(printf "%01x" $bus3d)
 
-	if [ $( (lspci -d ::0300 && lspci -d ::0302) | grep -iEc "$bus1h:$bus2h.$bus3h") -eq 1 ]; then
-		print_info "EGPU is ${green}connected${blank}."
-		gpu_connected=1
-		hex_id=$bus1h:$bus2h.$bus3h
-		#return 1
-	else
-		print_info "EGPU is ${red}disconnected${blank}."
-		gpu_connected=0
-	fi
+	# instantiate counter
+	declare i=1
+
+	# begin infinite loop to allow retries if the egpu isn't connected immediately on bootup
+	while [ true ]; do
+
+		# if a video device is connected to the BUS-ID
+		if [ $( (lspci -d ::0300 && lspci -d ::0302) | grep -iEc "$bus1h:$bus2h.$bus3h") -eq 1 ]; then
+			print_info "EGPU is ${green}connected${blank}."
+			gpu_connected=1
+			hex_id=$bus1h:$bus2h.$bus3h
+			break
+		else
+			# escape the infinite loop after a certain amount of retries
+			if [ $i -ge 6 ]; then
+				print_info "EGPU is ${red}disconnected${blank}."
+				gpu_connected=0
+				break
+			fi
+		fi
+
+		# increase counter by 1
+		i=$(( $i + 1 ))
+
+		# sleep for 500ms before retrying
+		sleep 0.5
+	done
 }
 
 # get the matching driver according to the gpu name
