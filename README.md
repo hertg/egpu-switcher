@@ -113,13 +113,8 @@ $ make uninstall
 
 ---
 
-## Hints
-
-1. **Ubuntu 19.04 or later**\
-When installing Ubuntu 19.04 or later, please check the box "Install third-party software for graphics and Wi-Fi hardware". After that, all required drivers will be installed automatically.
-
-1. **Notebooks with hybrid graphics**\
-I am using a Lenovo notebook with hybrid graphics (internal graphics **and** a dedicated GPU). I've experienced freezes in the Ubuntu 19.04 installer which could only be resolved by changing the display settings in the BIOS from **Hybrid Graphics** to **Discrete Graphics**. After the installation was complete, i was able to change this setting back to **Hybrid Graphics**, without any issues.
+## Troubleshooting
+If you run into problems, please have a look at [TROUBLESHOOT.md](https://github.com/hertg/egpu-switcher/blob/master/TROUBLESHOOT.md) before reporting any issues.
 
 ## Background information
 > A backup of your current `xorg.conf` will be created, nothing gets deleted. If the script doesn't work for you, you can revert the changes by executing `egpu-switcher cleanup` or just completely uninstall the script with `apt remove egpu-switcher`. This will remove all files it has created and also restore your previous `xorg.conf` file.
