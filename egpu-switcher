@@ -161,6 +161,7 @@ function is_egpu_connected() {
 			if [ $i -ge 6 ]; then
 				print_info "EGPU is ${red}disconnected${blank}."
 				gpu_connected=0
+				hex_id=$bus1h:$bus2h.$bus3h
 				break
 			fi
 		fi
