@@ -369,7 +369,7 @@ function switch() {
 		fi
 	fi
 
-	if [ ${mode} = "egpu" ] && [ $(cat $xfile_egpu | grep -Ei "Driver" | cut -f 2 -d \") != "nvidia" ]; then
+	if [ ${mode} = "egpu" ] && cat $xfile_egpu | grep -Ei "Driver" | cut -f 2 -d \" | grep -Fxq "nvidia"; then
 
 		if [ -z ${hex_id+x} ]; then
 			is_egpu_connected
