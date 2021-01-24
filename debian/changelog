@@ -1,3 +1,12 @@
+egpu-switcher (0.17.0) focal; urgency=medium
+
+  * Fix some timing issues: if egpu is not connected on bootup, probe again every 500ms and give up after a few seconds instead of immediately (PR #52)
+  * Fix "unbound variable" error when trying to switch to disconnected egpu (PR #53)
+  * Remove previously installed egpu-switcher manpages on "make install" to prevent unnecessary user prompt (PR #54)
+  * Fix issue in "if" statement when a user has customized their "Driver" part in xorg.conf.egpu (PR #57)
+
+ -- Michael Hertig <info@michaelhertig.ch>  Sun, 24 Jan 2021 16:38:19 +0100
+
 egpu-switcher (0.16.0) focal; urgency=medium
 
   * Fix wrong egpu detection when a non-graphics device is attached to the registered PCI Bus ID
