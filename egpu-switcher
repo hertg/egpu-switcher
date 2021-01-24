@@ -369,7 +369,8 @@ function switch() {
 		fi
 	fi
 
-	if [ ${mode} = "egpu" ] && [ $(cat $xfile_egpu | grep -Ei "Driver" | cut -f 2 -d \") != "nvidia" ]; then
+	# when mode is 'egpu' and no 'nvidia' driver is used
+	if [ ${mode} = "egpu" ] && ! grep -Eiq 'Driver.*nvidia' $xfile_egpu; then
 
 		if [ -z ${hex_id+x} ]; then
 			is_egpu_connected
