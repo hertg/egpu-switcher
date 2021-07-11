@@ -101,15 +101,15 @@ function read_gpus() {
 	# empty the gpus array
 	gpus=()
 
-	declare lines=$(lspci -d ::0300 && lspci -d ::0302)
+	declare lines=$(lspci -D -d ::0300 && lspci -D -d ::0302)
 	while read -r line ; do
 		declare name=$(echo $line | grep -o -e "[^:]*$")
 		declare bus=$(echo $line | grep -o -e "^[^ ]*")
 
 		# The bus IDs in hex
-		declare bus1h=${bus:0:2}
-		declare bus2h=${bus:3:2}
-		declare bus3h=${bus:6:1}
+		declare bus1h=${bus:5:2}
+		declare bus2h=${bus:8:2}
+		declare bus3h=${bus:11:1}
 
 		# The bus IDs in dec
 		declare bus1d=$((16#$bus1h))
