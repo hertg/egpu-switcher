@@ -202,8 +202,10 @@ function configure() {
 	# reset current config
 	config[internal_gpu]=""
 	config[internal_driver]=""
+	config[internal_hook]=""
 	config[external_gpu]=""
 	config[external_driver]=""
+	config[external_hook]=""
 
 	# read currently attached GPUs
 	read_gpus
@@ -402,12 +404,16 @@ function switch() {
 	if [ ${mode} = "egpu" ]; then
 		print_info "Create symlink ${green}${xfile}${blank} -> ${xfile_egpu}"
 		ln -sf ${xfile_egpu} ${xfile}
+		print_info "Execute external_hook : $(cat /etc/egpu-switcher/egpu-switcher.conf | grep external_hook | cut --complement -c 1-14)"
+		bash -c "$(cat /etc/egpu-switcher/egpu-switcher.conf | grep external_hook | cut --complement -c 1-14)"
 		return
 	fi
 
 	if [ ${mode} = "internal" ]; then
 		print_info "Create symlink ${green}${xfile}${blank} -> ${xfile_internal}"
 		ln -sf ${xfile_internal} ${xfile}
+		print_info "Execute internal_hook : $(cat /etc/egpu-switcher/egpu-switcher.conf | grep internal_hook | cut --complement -c 1-14)"
+		bash -c "$(cat /etc/egpu-switcher/egpu-switcher.conf | grep internal_hook | cut --complement -c 1-14)"
 		return
 	fi
 
