@@ -159,7 +159,7 @@ function is_egpu_connected() {
 		if [ $( (lspci -d ::0300 && lspci -d ::0302) | grep -iEc "$bus1h:$bus2h.$bus3h") -eq 1 ]; then
 			print_info "EGPU is ${green}connected${blank}."
 			gpu_connected=1
-			break
+			return
 		fi	
 
 		# sleep for 1 second before retrying
