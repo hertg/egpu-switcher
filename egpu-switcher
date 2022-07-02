@@ -17,9 +17,10 @@ declare warn="$yellow[warn]$blank"
 declare success="$green[success]$blank"
 declare info="$blue[info]$blank"
 
-# misc
+# date formatting for xorg.conf backups
 declare datetime=$(date '+%Y%m%d%H%M%S')
-declare number_regex='^[0-9]+$'
+# number values 1 through 99
+declare number_regex='^[1-9][0-9]?' 
 
 # constant variables for X-Server files
 declare xdir=/etc/X11
@@ -38,6 +39,9 @@ declare systemd_folder=/etc/systemd/system
 # todo: this assumes that there is bash 4+ installed
 declare -A gpus=()
 declare gpu_connected=0
+
+# default number of attempts to connect to egpu on boot
+declare default_num_retries=5
 
 # helper method for printing error messages
 function print_error() {
@@ -68,6 +72,7 @@ config=(
 	[internal_driver]=""
 	[external_gpu]=""
 	[external_driver]=""
+	[num_retries]=""
 )
 
 # read from config file
@@ -139,22 +144,16 @@ function is_egpu_connected() {
 	declare bus2d=${busArray[1]}
 	declare bus3d=${busArray[2]}
 
-	# convert dec to hex
-	declare bus1h=$(printf "%02x" $bus1d)
-	declare bus2h=$(printf "%02x" $bus2d)
-	declare bus3h=$(printf "%01x" $bus3d)
-
-	# instantiate counter
-	declare i=1
+	# set bus id in hexidecimal
+	hex_id=($(printf "%02x" $bus1d):$(printf "%02x" $bus2d).$(printf "%01x" $bus3d))
 
 	# begin loop to retry i times if the egpu isn't connected immediately on bootup
-	for i in {1..10} do
+	for ((i=1; i<=${config[num_retries]}; i++)); do
 
 		# if a video device is connected to the BUS-ID
 		if [ $( (lspci -d ::0300 && lspci -d ::0302) | grep -iEc "$bus1h:$bus2h.$bus3h") -eq 1 ]; then
 			print_info "EGPU is ${green}connected${blank}."
 			gpu_connected=1
-			hex_id=$bus1h:$bus2h.$bus3h
 			break
 		fi	
 
@@ -162,12 +161,7 @@ function is_egpu_connected() {
 		sleep 1
 	done
 
-	if [ $gpu_connected=0 ]; then
-		print_info "EGPU is ${red}disconnected${blank}."
-		gpu_connected=0
-		hex_id=$bus1h:$bus2h.$bus3h
-		break
-	fi
+	print_info "EGPU is ${red}disconnected${blank}."
 }
 
 # get the matching driver according to the gpu name
@@ -200,6 +194,7 @@ function configure() {
 	config[internal_driver]=""
 	config[external_gpu]=""
 	config[external_driver]=""
+	config[num_retries]=""
 
 	# read currently attached GPUs
 	read_gpus
@@ -238,7 +233,7 @@ function configure() {
 		declare pci_internal=${mapping[$internal]}
 
 		if ! [[ $internal =~ $number_regex ]] || [ -z "$pci_internal" ]; then
-			print_error "Your input is invalid. Exiting setup..."
+			print_error "Your input for internal gpu # is invalid. Exiting setup..."
 			exit
 		fi	
 
@@ -260,7 +255,7 @@ function configure() {
 	declare pci_external=${mapping[$external]}
 
 	if ! [[ $external =~ $number_regex ]] || [ -z "$pci_external" ]; then
-		print_error "Your input is invalid. Exiting setup..."
+		print_error "Your input for external gpu # is invalid. Exiting setup..."
 		exit
 	fi
 
@@ -275,6 +270,25 @@ function configure() {
 	fi
 
 	echo ""
+
+	printf "Would you like to define the number of attempts to connect to the EGPU? (recommended only if EGPU is not always recognized on boot) [y/N]: "
+	read specify_num_retries
+	if [[ $specify_num_retries == "y" ]]; then
+		# prompt to choose the number of tries to connect to egpu bus on boot
+		printf "Choose the number of attempts to connect to the EGPU on boot (1 attempt per second, default: ${default_num_retries}) [1-99]: "
+		read num_retries
+		declare full_internal=${gpus[${mapping[$internal]}]}
+		declare pci_internal=${mapping[$internal]}
+
+		if ! [[ $internal =~ $number_regex ]]; then
+			print_error "Your input is for # of egpu connection attempts invalid. Exiting setup..."
+			exit
+		fi
+
+		config[num_retries]=${num_retries}
+	else
+		config[num_retries]=${default_num_retries}
+	fi
 
 	# create config directory if it doesnt exist
 	mkdir -p $config_dir
