@@ -144,8 +144,13 @@ function is_egpu_connected() {
 	declare bus2d=${busArray[1]}
 	declare bus3d=${busArray[2]}
 
-	# set bus id in hexidecimal
-	hex_id=($(printf "%02x" $bus1d):$(printf "%02x" $bus2d).$(printf "%01x" $bus3d))
+	# convert dec to hex
+	declare bus1h=$(printf "%02x" $bus1d)
+	declare bus2h=$(printf "%02x" $bus2d)
+	declare bus3h=$(printf "%01x" $bus3d)
+
+	# set bus id in hex
+	hex_id=$bus1h:$bus2h.$bus3h
 
 	# begin loop to retry i times if the egpu isn't connected immediately on bootup
 	for ((i=1; i<=${config[num_retries]}; i++)); do
