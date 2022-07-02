@@ -274,18 +274,14 @@ function configure() {
 		config[external_driver]=${driver}
 	fi
 
-	echo ""
-
-	printf "Would you like to define the number of attempts to connect to the EGPU? (recommended only if EGPU is not always recognized on boot) [y/N]: "
+	printf "Would you like to define the number of attempts to connect to the EGPU on boot? (recommended only if EGPU is not always recognized) [y/N]: "
 	read specify_num_retries
 	if [[ $specify_num_retries == "y" ]]; then
 		# prompt to choose the number of tries to connect to egpu bus on boot
 		printf "Choose the number of attempts to connect to the EGPU on boot (1 attempt per second, default: ${default_num_retries}) [1-99]: "
 		read num_retries
-		declare full_internal=${gpus[${mapping[$internal]}]}
-		declare pci_internal=${mapping[$internal]}
 
-		if ! [[ $internal =~ $number_regex ]]; then
+		if ! [[ $num_retries =~ $number_regex ]]; then
 			print_error "Your input is for # of egpu connection attempts invalid. Exiting setup..."
 			exit
 		fi
@@ -294,6 +290,8 @@ function configure() {
 	else
 		config[num_retries]=${default_num_retries}
 	fi
+
+	echo ""
 
 	# create config directory if it doesnt exist
 	mkdir -p $config_dir
