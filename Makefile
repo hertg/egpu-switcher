@@ -1,8 +1,12 @@
 BINDIR := /usr/bin
 SHAREDIR := /usr/share
 MANDIR := /usr/share/man/man1
+BINARY_NAME := egpu-switcher
 
 all:
+
+build:
+	go build -o ${BINARY_NAME}
 
 install:
 	mkdir -p ${DESTDIR}${BINDIR}

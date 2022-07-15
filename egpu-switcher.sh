@@ -1,0 +1,579 @@
+#!/usr/bin/env bash
+
+set -o errexit # exit script if a command fails
+set -o nounset # exit when trying to use undeclared variables
+#set -o xtrace # debug
+
+# define some colors
+declare red='\033[1;31m'
+declare yellow='\033[1;33m'
+declare green='\033[1;32m'
+declare blue='\033[1;34m'
+declare blank='\033[0m'
+
+# define log level prefix
+declare error="$red[error]$blank"
+declare warn="$yellow[warn]$blank"
+declare success="$green[success]$blank"
+declare info="$blue[info]$blank"
+
+# misc
+declare datetime=$(date '+%Y%m%d%H%M%S')
+declare number_regex='^[0-9]+$'
+
+# constant variables for X-Server files
+declare xdir=/etc/X11
+declare xfile=$xdir/xorg.conf
+declare xfile_egpu=$xdir/xorg.conf.egpu
+declare xfile_internal=$xdir/xorg.conf.internal
+declare xfile_backup=$xfile.backup
+
+# constant variables for temp files
+declare tmp_template=/usr/share/egpu-switcher/xorg.conf.template
+
+# constant variables for systemd files
+declare systemd_template=/usr/share/egpu-switcher/egpu.service
+declare systemd_folder=/etc/systemd/system
+
+# todo: this assumes that there is bash 4+ installed
+declare -A gpus=()
+declare gpu_connected=0
+
+# helper method for printing error messages
+function print_error() {
+	echo -e "$error $1"
+}
+
+# helper method for printing info messages
+function print_info() {
+	echo -e "$info $1"
+}
+
+# helper method for printing warn messages
+function print_warn() {
+	echo -e "$warn $1"
+}
+
+# helper method for printin success messages
+function print_success() {
+	echo -e "$success $1"
+}
+
+# config
+config_dir=/etc/egpu-switcher
+config_file=${config_dir}/egpu-switcher.conf
+typeset -A config
+config=(
+	[internal_gpu]=""
+	[internal_driver]=""
+	[external_gpu]=""
+	[external_driver]=""
+)
+
+# read from config file
+if [ -f $config_file ]; then
+	#print_info "Reading contents of your current configuration file at '${config_file}'"
+	while read line
+	do
+		if echo $line | grep -F = &>/dev/null
+		then
+			varname=$(echo "$line" | cut -d '=' -f 1)
+			config[$varname]=$(echo "$line" | cut -d '=' -f 2-)
+		fi
+	done < $config_file
+fi
+
+# check if the script is run as root
+if [[ $EUID -ne 0 ]]; then 
+  	print_error "You need to run the script with root privileges"
+  	exit
+fi
+
+# check if an argument was passed
+if [ -z ${1+x} ]; then
+	print_error "No argument passed."
+	exit
+fi
+
+# read the connected GPUs and put them into the "gpus" associative array
+function read_gpus() {
+
+	# empty the gpus array
+	gpus=()
+
+	declare lines=$(lspci -D -d ::0300 && lspci -D -d ::0302)
+	while read -r line ; do
+		declare name=$(echo $line | grep -o -e "[^:]*$")
+		declare bus=$(echo $line | grep -o -e "^[^ ]*")
+
+		# The bus IDs in hex
+		declare bus1h=${bus:5:2}
+		declare bus2h=${bus:8:2}
+		declare bus3h=${bus:11:1}
+
+		# The bus IDs in dec
+		declare bus1d=$((16#$bus1h))
+		declare bus2d=$((16#$bus2h))
+		declare bus3d=$((16#$bus3h))
+
+		# Remove the whitespace at the beginning of the name
+		# And concatenate bus IDs
+		bus="${bus1d}:${bus2d}:${bus3d}"
+		name=${name:1}
+
+		# Put the result into the gpus array
+		gpus+=( [$bus]=$name )
+	done <<< $lines
+	return
+}
+
+# returns 1 if egpu is connected, 0 if not
+function is_egpu_connected() {
+
+	# read pci id from xorg.conf.egpu
+	declare egpu_pci_id=$(cat $xfile_egpu | grep -Ei "BusID" | grep -oEi '[0-9]+\:[0-9]+\:[0-9]+')
+
+	# create an array by splitting the BUS-ID on ':'
+	declare busArray=(${egpu_pci_id//:/ })
+	declare bus1d=${busArray[0]}
+	declare bus2d=${busArray[1]}
+	declare bus3d=${busArray[2]}
+
+	# convert dec to hex
+	declare bus1h=$(printf "%02x" $bus1d)
+	declare bus2h=$(printf "%02x" $bus2d)
+	declare bus3h=$(printf "%01x" $bus3d)
+
+	# instantiate counter
+	declare i=1
+
+	# begin infinite loop to allow retries if the egpu isn't connected immediately on bootup
+	while [ true ]; do
+
+		# if a video device is connected to the BUS-ID
+		if [ $( (lspci -d ::0300 && lspci -d ::0302) | grep -iEc "$bus1h:$bus2h.$bus3h") -eq 1 ]; then
+			print_info "EGPU is ${green}connected${blank}."
+			gpu_connected=1
+			hex_id=$bus1h:$bus2h.$bus3h
+			break
+		else
+			# escape the infinite loop after a certain amount of retries
+			if [ $i -ge 6 ]; then
+				print_info "EGPU is ${red}disconnected${blank}."
+				gpu_connected=0
+				hex_id=$bus1h:$bus2h.$bus3h
+				break
+			fi
+		fi
+
+		# increase counter by 1
+		i=$(( $i + 1 ))
+
+		# sleep for 500ms before retrying
+		sleep 0.5
+	done
+}
+
+# get the matching driver according to the gpu name
+function get_driver() {
+
+	input=${1}
+
+	if [ $(echo "${input}" | grep -Eic "nvidia") -gt 0 ]; then
+		echo "nvidia"
+		return
+	fi
+
+	if [ $(echo "${input}" | grep -Eic "intel") -gt 0 ]; then
+		echo "intel"
+		return
+	fi
+
+	if [ $(echo "${input}" | grep -Eic "amd") -gt 0 ]; then
+		echo "amdgpu"
+		return
+	fi
+}
+
+# prompts the user to define their external/internal GPUs
+# and saves it into the config file
+function configure() {
+
+	# reset current config
+	config[internal_gpu]=""
+	config[internal_driver]=""
+	config[external_gpu]=""
+	config[external_driver]=""
+
+	# read currently attached GPUs
+	read_gpus
+
+	# save the number of lines to a variable
+	declare num_of_gpus=${#gpus[@]}
+
+	# additional check
+	if [ $num_of_gpus -lt "2" ]; then
+		print_warn "Only ${num_of_gpus} GPUs found, there need to be at least 2. Make sure to connect your EGPU for the setup."
+		exit
+	fi
+
+	# print the GPUs found
+	echo ""
+	echo -e "Found $num_of_gpus possible GPUs..."
+	echo ""
+
+	declare mapping=()
+	declare i=0
+	for key in ${!gpus[@]}; do
+		i=$((i+1))
+		mapping+=([${i}]=${key})
+		echo "  $i: ${gpus[${key}]} (${key})"
+	done
+
+	echo ""
+
+	printf "Would you like to define a specific$green INTERNAL$blank GPU? (not recommended) [y/N]: "
+	read specify_internal
+	if [[ $specify_internal == "y" ]]; then
+		# prompt to choose the internal gpu from the list
+		printf "Choose your preferred$green INTERNAL$blank GPU [1-$num_of_gpus]: "
+		read internal
+		declare full_internal=${gpus[${mapping[$internal]}]}
+		declare pci_internal=${mapping[$internal]}
+
+		if ! [[ $internal =~ $number_regex ]] || [ -z "$pci_internal" ]; then
+			print_error "Your input is invalid. Exiting setup..."
+			exit
+		fi	
+
+		config[internal_gpu]=${pci_internal}
+		config[internal_driver]=$(get_driver "$full_internal")
+
+		if [ -z ${config[internal_driver]} ]; then
+			print_info "Could not parse manufacturer from \"$full_internal\"."
+			printf "Please manually enter the driver to be used: "
+			read driver
+			config[internal_driver]=${driver}
+		fi
+	fi
+
+	# prompt to choose the external gpu from the list
+	printf "Choose your preferred$green EXTERNAL$blank GPU [1-$num_of_gpus]: "
+	read external
+	declare full_external=${gpus[${mapping[$external]}]}
+	declare pci_external=${mapping[$external]}
+
+	if ! [[ $external =~ $number_regex ]] || [ -z "$pci_external" ]; then
+		print_error "Your input is invalid. Exiting setup..."
+		exit
+	fi
+
+	config[external_gpu]=${pci_external}
+	config[external_driver]=$(get_driver "$full_external")
+
+	if [ -z "${config[external_driver]}" ]; then
+		print_info "Could not parse manufacturer from \"$full_external\"."
+		printf "Please manually enter the driver to be used: "
+		read driver
+		config[external_driver]=${driver}
+	fi
+
+	echo ""
+
+	# create config directory if it doesnt exist
+	mkdir -p $config_dir
+
+	# empty current config file
+	true > $config_file
+
+	# write new configurations to config file
+	for key in ${!config[@]}; do
+		echo "${key}=${config[${key}]}" >> $config_file
+	done
+
+	print_info "Saved new configuration to ${config_file}"
+}
+
+function setup() {
+
+	declare override=${1}
+	declare noprompt=${2}
+
+	# check if the template/script files can be found
+	if [ ! -f $tmp_template ]; then
+		print_error "The file $tmp_template wasn't found."
+		exit
+	fi
+
+	if [ -z ${config[external_gpu]} ]; then
+		if [ ${noprompt} -eq 1 ]; then
+			print_warn "It seems like you haven't configured egpu-switcher yet. Please run 'egpu-switcher setup' first."
+			exit
+		else
+			configure
+		fi
+	else
+		print_info "Using existing configuration file at '${config_file}''."
+		print_info "If you want to reconfigure egpu-switcher, please run 'egpu-switcher config'."
+	fi
+
+	# create the internal xorg config file
+	if [ ! -z ${config[internal_gpu]} ]; then
+		cp $tmp_template $xfile_internal
+		sed -i -e 's/\$BUS/'${config[internal_gpu]}'/g' -e 's/\$DRIVER/'${config[internal_driver]}'/g' -e 's/\$ID/Device0/g' $xfile_internal
+	else 
+		true > $xfile_internal
+	fi
+
+	# create the external xorg config file
+	cp $tmp_template $xfile_egpu
+	sed -i -e 's/\$BUS/'${config[external_gpu]}'/g' -e 's/\$DRIVER/'${config[external_driver]}'/g' -e 's/\$ID/Device0/g' $xfile_egpu
+
+	# Executing the switch command to create the xorg.conf file
+	switch auto ${override}
+
+	# setup startup script
+	cp $systemd_template $systemd_folder
+	systemctl daemon-reload
+	systemctl enable egpu.service
+
+	print_success "Done... Setup finished"
+}
+
+function switch() {
+
+	declare mode=${1}
+	declare override=${2}
+	
+	# Check if the xorg.conf files for internal and egpu exist
+	if ! [ -f $xfile_egpu ] || ! [ -f $xfile_internal ]; then
+		print_error "The xorg.conf files for egpu and internal do not exist. Run the setup first."
+		return
+	fi
+
+	# Check if there is a xorg.conf file, and back it up
+	if [ -f $xfile ] && ! [ -L $xfile ]; then
+		print_warn "The $xfile file already exists. Saving a backup to $xfile_backup.$datetime"
+		cp "$xfile" "$xfile_backup.$datetime"
+	fi
+
+	# if no parameter was passed to the method
+	if [ ${mode} = "auto" ]; then
+
+		print_info "Automatically detecting if egpu is connected... "
+		is_egpu_connected
+		if [ ${gpu_connected} = 1 ] ; then
+			mode="egpu"
+		else
+			mode="internal"
+		fi
+	fi
+
+	# when mode is 'egpu' and no 'nvidia' driver is used
+	if [ ${mode} = "egpu" ] && ! grep -Eiq 'Driver.*nvidia' $xfile_egpu; then
+
+		if [ -z ${hex_id+x} ]; then
+			is_egpu_connected
+		fi
+		
+		declare disp_path=/sys/bus/pci/devices/[0-9a-f:]*${hex_id}/drm/card[0-9]*/card[0-9]*-*/status
+		declare disp_num=0
+		declare disp_disconnect=0
+		for disp in ${disp_path}; do
+			if [ -e $disp ]; then
+				((disp_num = $disp_num + 1)) || true
+				((disp_disconnect = $disp_disconnect + $(cat $disp | grep -ce ^disconnected$))) || true
+			fi
+		done
+
+		if [ $disp_disconnect -eq $disp_num ] && [ $disp_num -gt 0 ]; then
+			print_warn "No eGPU attached display detected with open source drivers. (Of ${disp_num} eGPU outputs detected) Internal mode and setting DRI_PRIME variable are recommended for this configuration."
+			if [ ${override} -eq 1 ]; then
+				print_warn "-> Overridden: Setting eGPU mode"
+				mode="egpu"
+			else 
+				print_warn "Run 'egpu-switcher switch egpu --override' to force loading eGPU mode"
+				print_warn "-> Not setting eGPU mode."
+				mode="internal"
+			fi
+		fi
+	fi
+
+	if [ ${mode} = "egpu" ]; then
+		print_info "Create symlink ${green}${xfile}${blank} -> ${xfile_egpu}"
+		ln -sf ${xfile_egpu} ${xfile}
+		return
+	fi
+
+	if [ ${mode} = "internal" ]; then
+		print_info "Create symlink ${green}${xfile}${blank} -> ${xfile_internal}"
+		ln -sf ${xfile_internal} ${xfile}
+		return
+	fi
+
+	print_error "The argument '${mode}' that was passed to the switch() method is not valid."
+}
+
+function remove() {
+
+	if [ -z ${hex_id+x} ]; then
+		is_egpu_connected
+	fi
+
+	if [ $gpu_connected = 0 ]; then
+		print_error "No eGPU detected at BusID specified in xorg.conf.egpu. Stopping removal."
+		exit
+	fi
+
+	# Find GPU and audio devices
+	declare device_id=$(echo ${hex_id} | cut -f 1 -d '.').
+	declare device_path=/sys/bus/pci/devices/[0-9a-f:]*${device_id}[0-9]*/remove
+	declare vga_driver=$(cat $xfile_egpu | grep -Ei "Driver" | cut -f 2 -d \")
+
+	# Do actual GPU removal
+	( trap '' HUP TERM
+		while [ "$(systemctl status display-manager | awk '/Active:/{print$2}')" \
+			= "active" ]; do
+			sleep 1
+		done
+
+		if [ ${vga_driver} = "nvidia" ]; then
+			systemctl stop nvidia-persistenced.service
+			if [ $(lsmod | grep "nvidia_uvm " | awk '{print $3}') -gt 0 ] || [ $(lsmod | grep "nvidia_drm " | awk '{print $3}') -gt 0 ]; then
+				systemctl start display-manager.service
+				print_error "Driver still in use. Check for applications like Folding@Home running in the background. Stopping removal."
+				exit
+			fi
+			for drivers in nvidia_uvm nvidia_drm nvidia_modeset nvidia; do
+				modprobe -r ${drivers}
+			done
+		else
+			if [ $(lsmod | grep "${vga_driver} " | awk '{print $3}') -gt 0 ]; then
+				systemctl start display-manager.service
+				print_error "Driver still in use. Check for applications like Folding@Home running in the background. Stopping removal."
+				exit
+			fi
+			modprobe -r ${vga_driver}
+		fi
+
+		for dev_paths in ${device_path}; do
+			if [ -e $dev_paths ]; then
+				echo 1 > $dev_paths
+			fi
+		done
+
+		if [ $(lspci -k | grep -c ${vga_driver}) -gt 0 ]; then
+			modprobe ${vga_driver}
+			if [ ${vga_driver} = "nvidia" ]; then
+				modprobe nvidia_drm
+			fi
+			sleep 1
+		fi
+
+		systemctl start display-manager.service ) &
+	systemctl stop display-manager.service
+}
+
+function cleanup() {
+
+	declare hard=${1}
+
+	print_info "Starting cleanup process"
+	rm -f ${xfile_egpu}
+	rm -f ${xfile_internal}
+
+	# delete the xorg.conf file, if it is a symlink and restore the last backup
+    if [ -L ${xfile} ]; then
+        rm -f ${xfile}
+        if [ -e ${xfile_backup}.* ]; then
+            local lastbackup=$(ls -t ${xfile_backup}.* | head -1)
+            print_info "Restoring latest backup ${green}${lastbackup}"
+            mv ${lastbackup} ${xfile}
+        fi
+    fi
+
+	if [ ${hard} -eq 1 ]; then
+		print_info "Removing configuration files (--hard)"
+		rm -f ${config_file}
+		rm -fd ${config_dir}
+	fi
+
+	# only try to stop the egpu.service if its loaded. 
+	# note: using sed rather than the --value property on purpose, to support older versions of systemd
+	if [ $(sudo systemctl show -p LoadState egpu.service | sed 's/LoadState=//g') == "loaded" ]; then
+		print_info "Removing the 'egpu.service' systemd service"
+		systemctl stop egpu.service
+		systemctl disable egpu.service
+		rm ${systemd_folder}/egpu.service
+		systemctl daemon-reload
+		systemctl reset-failed
+	fi
+
+	print_success "Done... Finished cleanup"
+}
+
+
+if [ $1 = "setup" ]; then
+
+	declare override=0
+	declare noprompt=0
+	if [ $# -gt 1 ]; then
+		for option in "$@"
+		do
+			if [ ${option} = "--override" ]; then
+				override=1
+			elif [ ${option} = "--noprompt" ]; then
+				noprompt=1
+			fi
+		done
+	fi
+	setup ${override} ${noprompt}
+
+elif [ $1 = "switch" ]; then
+
+	declare override=0
+	if [ $# -lt 2 ]; then
+		print_error "No argument passed to the switch method. Possible options: auto, egpu, internal"
+		exit
+	else
+		for option in "$@" 
+		do
+			if [ ${option} = "--override" ]; then
+				override=1
+			fi
+		done
+	fi
+	switch ${2} ${override}
+
+elif [ $1 = "config" ]; then
+
+	configure
+
+elif [ $1 = "cleanup" ]; then
+
+	declare hard=0
+	if [ $# -gt 1 ]; then 
+		for option in "$@"
+		do
+			if [ ${option} = "--hard" ]; then
+				hard=1
+			fi
+		done
+	fi
+
+	cleanup ${hard}
+
+elif [ $1 = "remove" ]; then
+
+	print_warn "This will switch to internal mode, remove the eGPU PCIe addresses and log out all users. Continue? [y/N]: "
+	read specify_remove
+	if [[ $specify_remove == "y" ]]; then
+		switch internal 0
+		remove
+	fi
+
+else
+	print_error "Unknown argument '$1'.\navailable commands: setup, switch, config, cleanup, remove"
+fi
+
+# systemctl restart display-manager.service
