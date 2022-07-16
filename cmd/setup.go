@@ -11,8 +11,13 @@ var setupCommand = &cobra.Command{
 	Use:   "setup",
 	Short: "",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		pci.Test()
-		return fmt.Errorf("not implemented")
+		gpus := pci.ReadGPUs()
+		for _, gpu := range gpus {
+			fmt.Println(gpu.DisplayName())
+			fmt.Println(gpu.XorgPCIString())
+			fmt.Println(gpu.Identifier())
+		}
+		return nil
 	},
 }
 
