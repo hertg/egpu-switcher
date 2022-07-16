@@ -3,11 +3,17 @@ package pci
 import (
 	"fmt"
 	"strconv"
+	"strings"
+	"sync"
 
 	"github.com/jaypipes/ghw"
+	"github.com/jaypipes/pcidb"
 )
 
 // todo: eliminate external dependency to ghw by using sysfs directly
+
+var db *pcidb.PCIDB
+var once sync.Once
 
 type IdName struct {
 	id   string
@@ -15,15 +21,21 @@ type IdName struct {
 }
 
 type GPU struct {
-	hexAddress           string
-	driver               *string
-	vendor               IdName
-	product              IdName
-	revision             string
-	subsystem            IdName
-	class                IdName
-	subclass             IdName
-	programmingInterface IdName
+	hexAddress    string
+	id            uint64
+	vendorId      uint16
+	vendorName    string
+	deviceId      uint16
+	deviceName    string
+	classId       uint16
+	className     string
+	subclassId    uint16
+	subclassName  string
+	subvendorId   uint16
+	subvendorName string
+	subdeviceId   uint16
+	subdeviceName string
+	revision      uint8
 }
 
 func (g *GPU) XorgPCIString() string {
@@ -34,55 +46,76 @@ func (g *GPU) XorgPCIString() string {
 	return fmt.Sprintf("PCI:%d@%d:%d:%d", bus, domain, device, function)
 }
 
-func (g *GPU) Identifier() string {
-	return fmt.Sprintf("%s:%s:%s:%s", g.vendor.id, g.subsystem.id, g.product.id, g.revision)
+func (g *GPU) Identifier() uint64 {
+	return uint64(g.vendorId)<<48 | uint64(g.deviceId)<<32 | uint64(g.subvendorId)<<16 | uint64(g.subdeviceId)
 }
 
 func (g *GPU) DisplayName() string {
-	return fmt.Sprintf("%s: %s", g.vendor.name, g.product.name)
+	return fmt.Sprintf("%s %s: %s (%s) %s (rev %02x)", g.hexAddress, g.subclassName, g.vendorName, g.subvendorName, g.deviceName, g.revision)
+}
+
+func getPCIDB() *pcidb.PCIDB {
+	once.Do(func() {
+		var err error
+		db, err = pcidb.New()
+		if err != nil {
+			panic("unable to get pcidb")
+		}
+	})
+	return db
 }
 
 func ReadGPUs() []*GPU {
-	info, err := ghw.PCI()
+	pci, err := ghw.PCI()
 	if err != nil {
 		panic("unable to get pci informaticon")
 	}
+	pdb := getPCIDB()
 	var gpus []*GPU
-	for _, device := range info.Devices {
-		j, _ := device.MarshalJSON()
-		fmt.Println(string(j))
-		//if device.Class.ID == "03" && (device.Subclass.ID == "00" || device.Subclass.ID == "02") {
-		dev := &GPU{
-			hexAddress: device.Address,
-			driver:     &device.Driver,
-			vendor: IdName{
-				id:   device.Vendor.ID,
-				name: device.Vendor.Name,
-			},
-			product: IdName{
-				id:   device.Product.ID,
-				name: device.Product.Name,
-			},
-			revision: device.Revision,
-			subsystem: IdName{
-				id:   device.Subsystem.ID,
-				name: device.Subsystem.Name,
-			},
-			class: IdName{
-				id:   device.Class.ID,
-				name: device.Class.Name,
-			},
-			subclass: IdName{
-				id:   device.Subclass.ID,
-				name: device.Subclass.Name,
-			},
-			programmingInterface: IdName{
-				id:   device.Product.ID,
-				name: device.Product.Name,
-			},
+	for _, d := range pci.Devices {
+		if d.Class.ID == "03" && (d.Subclass.ID == "00" || d.Subclass.ID == "02") {
+			vendorId, _ := strconv.ParseUint(d.Vendor.ID, 16, 16)
+			deviceId, _ := strconv.ParseUint(d.Product.ID, 16, 16)
+			classId, _ := strconv.ParseUint(d.Class.ID, 16, 16)
+			subclassId, _ := strconv.ParseUint(d.Subclass.ID, 16, 16)
+			subvendorId, _ := strconv.ParseUint(d.Subsystem.VendorID, 16, 16)
+			subvendorName := ""
+			subdeviceId, _ := strconv.ParseUint(d.Subsystem.ID, 16, 16)
+			revision, _ := strconv.ParseUint(strings.TrimPrefix(d.Revision, "0x"), 16, 8)
+			if subvendorId != 0 {
+				if vinfo, ok := pdb.Vendors[d.Subsystem.VendorID]; ok {
+					subvendorName = vinfo.Name
+				}
+			}
+			dev := &GPU{
+				hexAddress:    d.Address,
+				id:            vendorId<<48 | deviceId<<32 | subvendorId<<16 | subdeviceId,
+				vendorId:      uint16(vendorId),
+				vendorName:    d.Vendor.Name,
+				deviceId:      uint16(deviceId),
+				deviceName:    d.Product.Name,
+				classId:       uint16(classId),
+				className:     d.Class.Name,
+				subclassId:    uint16(subclassId),
+				subclassName:  d.Subclass.Name,
+				subvendorId:   uint16(subvendorId),
+				subvendorName: subvendorName,
+				subdeviceId:   uint16(subdeviceId),
+				subdeviceName: d.Subsystem.Name,
+				revision:      uint8(revision),
+			}
+			gpus = append(gpus, dev)
 		}
-		gpus = append(gpus, dev)
-		//}
 	}
 	return gpus
+}
+
+func IsPresent(id uint64) bool {
+	gpus := ReadGPUs()
+	for _, gpu := range gpus {
+		if gpu.Identifier() == id {
+			return true
+		}
+	}
+	return false
 }
