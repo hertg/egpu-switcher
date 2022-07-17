@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/fatih/color"
 	"github.com/jaypipes/ghw"
 	"github.com/jaypipes/pcidb"
 )
@@ -51,7 +52,27 @@ func (g *GPU) Identifier() uint64 {
 }
 
 func (g *GPU) DisplayName() string {
+	bold := color.New(color.Bold).SprintFunc()
+	return fmt.Sprintf("\t%s (rev %02x)\n\t%s (%s)", bold(g.deviceName), g.revision, g.vendorName, g.subvendorName)
+}
+
+func (g *GPU) LspciDisplayName() string {
 	return fmt.Sprintf("%s %s: %s (%s) %s (rev %02x)", g.hexAddress, g.subclassName, g.vendorName, g.subvendorName, g.deviceName, g.revision)
+}
+
+func (g *GPU) GuessDriver() (string, error) {
+	if contains(g.vendorName, "nvidia") {
+		return "nvidia", nil
+	} else if contains(g.vendorName, "amd") {
+		return "amdgpu", nil
+	} else if contains(g.vendorName, "intel") {
+		return "intel", nil // ?
+	}
+	return "", fmt.Errorf("unable to guess driver for vendor %s", g.vendorName)
+}
+
+func contains(str string, substr string) bool {
+	return strings.Contains(strings.ToLower(str), substr)
 }
 
 func getPCIDB() *pcidb.PCIDB {

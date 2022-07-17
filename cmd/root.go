@@ -3,8 +3,10 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"strings"
 
+	"github.com/hertg/egpu-switcher/internal/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -39,16 +41,18 @@ func initConfig() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
+	verbose := viper.GetBool("verbose")
+
 	err := viper.ReadInConfig()
 	if err != nil {
 		switch err.(type) {
 		case viper.ConfigFileNotFoundError:
-			// todo: create config file
-			fmt.Println("todo: create config file")
+			if verbose {
+				logger.Debugf("no configuration file found, creating a new one at %s\n", configPath)
+			}
 			os.MkdirAll(configPath, 0744)
 			err = viper.SafeWriteConfig()
 			cobra.CheckErr(err)
-			os.Exit(1)
 		default:
 			fmt.Println("unable to load config:", err)
 			os.Exit(1)
@@ -57,7 +61,20 @@ func initConfig() {
 }
 
 func Execute() {
+	rootCheck()
 	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func rootCheck() {
+	u, err := user.Current()
+	if err != nil {
+		fmt.Println("unable to get current user. if you run into permission issues, re-try running as root")
+		return
+	}
+	if u.Uid != "0" {
+		fmt.Println("please run as root")
 		os.Exit(1)
 	}
 }
