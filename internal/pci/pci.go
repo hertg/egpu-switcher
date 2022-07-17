@@ -56,9 +56,9 @@ func (g *GPU) DisplayName() string {
 	return fmt.Sprintf("\t%s (rev %02x)\n\t%s (%s)", bold(g.deviceName), g.revision, g.vendorName, g.subvendorName)
 }
 
-func (g *GPU) LspciDisplayName() string {
-	return fmt.Sprintf("%s %s: %s (%s) %s (rev %02x)", g.hexAddress, g.subclassName, g.vendorName, g.subvendorName, g.deviceName, g.revision)
-}
+//func (g *GPU) LspciDisplayName() string {
+//	return fmt.Sprintf("%s %s: %s (%s) %s (rev %02x)", g.hexAddress, g.subclassName, g.vendorName, g.subvendorName, g.deviceName, g.revision)
+//}
 
 func (g *GPU) GuessDriver() (string, error) {
 	if contains(g.vendorName, "nvidia") {
@@ -131,12 +131,12 @@ func ReadGPUs() []*GPU {
 	return gpus
 }
 
-func IsPresent(id uint64) bool {
+func Find(id uint64) *GPU {
 	gpus := ReadGPUs()
 	for _, gpu := range gpus {
 		if gpu.Identifier() == id {
-			return true
+			return gpu
 		}
 	}
-	return false
+	return nil
 }

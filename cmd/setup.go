@@ -28,9 +28,9 @@ var setupCommand = &cobra.Command{
 		fmt.Printf("running ghw.PCI() takes %dµs\n", am)
 
 		b1 := time.Now()
-		fmt.Println(pci.IsPresent(1153611719250962689))
+		fmt.Println(pci.Find(1153611719250962689))
 		b2 := time.Now()
-		fmt.Println(pci.IsPresent(1153611719250962690))
+		fmt.Println(pci.Find(1153611719250962690))
 		b3 := time.Now()
 
 		bm1 := b2.UnixMicro() - b1.UnixMicro()
@@ -41,7 +41,7 @@ var setupCommand = &cobra.Command{
 
 		c1 := time.Now()
 		for i := 0; i < 100; i++ {
-			_ = pci.IsPresent(1153611719250962689)
+			_ = pci.Find(1153611719250962689)
 		}
 		c2 := time.Now()
 		cm := c2.UnixMicro() - c1.UnixMicro()

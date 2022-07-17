@@ -48,7 +48,7 @@ func initConfig() {
 		switch err.(type) {
 		case viper.ConfigFileNotFoundError:
 			if verbose {
-				logger.Debugf("no configuration file found, creating a new one at %s\n", configPath)
+				logger.Debug("no configuration file found, creating a new one at %s\n", configPath)
 			}
 			os.MkdirAll(configPath, 0744)
 			err = viper.SafeWriteConfig()
