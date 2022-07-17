@@ -21,9 +21,11 @@ var rootCmd = &cobra.Command{
 
 const configPath = "/etc/egpu-switcher"
 
+var verbose bool
+
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 }
 
 func initConfig() {
@@ -35,13 +37,13 @@ func initConfig() {
 	viper.SetDefault("verbose", false)
 
 	// bind cobra flags to viper config
-	viper.BindPFlags(rootCmd.Flags())
+	//viper.BindPFlags(rootCmd.Flags())
 
 	// map environment variables with underscores
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
-	verbose := viper.GetBool("verbose")
+	//verbose = viper.GetBool("verbose")
 
 	err := viper.ReadInConfig()
 	if err != nil {

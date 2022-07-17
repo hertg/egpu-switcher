@@ -3,17 +3,19 @@ SHAREDIR := /usr/share
 MANDIR := /usr/share/man/man1
 BINARY_NAME := egpu-switcher
 
-all:
+all: build
 
-build:
+build: test
 	go build -o ${BINARY_NAME}
 
-install:
+test:
+	go test ./...
+
+install: build
 	mkdir -p ${DESTDIR}${BINDIR}
 	cp egpu-switcher ${DESTDIR}${BINDIR}/
 	mkdir -p ${DESTDIR}${SHAREDIR}/egpu-switcher
-	cp xorg.conf.template ${DESTDIR}${SHAREDIR}/egpu-switcher/
-	cp egpu.service ${DESTDIR}${SHAREDIR}/egpu-switcher/
+#	cp egpu.service ${DESTDIR}${SHAREDIR}/egpu-switcher/
 	mkdir -p ${DESTDIR}${MANDIR}
 	cp docs/egpu-switcher.1 ${DESTDIR}${MANDIR}/
 	rm -f ${DESTDIR}${MANDIR}/egpu-switcher.1.gz
