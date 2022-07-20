@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/user"
 	"strings"
 
 	"github.com/hertg/egpu-switcher/internal/logger"
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
 	"github.com/spf13/viper"
 )
 
@@ -63,6 +65,17 @@ func initConfig() {
 }
 
 func Execute() {
+
+	header := &doc.GenManHeader{
+		Title:   "MINE",
+		Section: "3",
+	}
+
+	err := doc.GenManTree(rootCmd, header, "./tmp")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	rootCheck()
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

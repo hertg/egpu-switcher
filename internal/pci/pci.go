@@ -2,6 +2,8 @@ package pci
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -54,6 +56,37 @@ func (g *GPU) Identifier() uint64 {
 func (g *GPU) DisplayName() string {
 	bold := color.New(color.Bold).SprintFunc()
 	return fmt.Sprintf("\t%s (rev %02x)\n\t%s (%s)", bold(g.deviceName), g.revision, g.vendorName, g.subvendorName)
+}
+
+func (g *GPU) Address() string {
+	return g.hexAddress
+}
+
+func (g *GPU) HasDisplaysConnected() (bool, error) {
+	pattern := fmt.Sprintf("/sys/bus/pci/devices/%s/drm/card[0-9]*/card[0-9]*-*/status", g.Address())
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return false, err
+	}
+	for _, path := range matches {
+		contents, err := os.ReadFile(path)
+		if err != nil {
+			return false, err
+		}
+		if strings.TrimSuffix(string(contents), "\n") == "connected" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (g *GPU) NumberOfDisplays() (int, error) {
+	pattern := fmt.Sprintf("/sys/bus/pci/devices/%s/drm/card[0-9]*/card[0-9]*-*/status", g.Address())
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return 0, err
+	}
+	return len(matches), nil
 }
 
 //func (g *GPU) LspciDisplayName() string {

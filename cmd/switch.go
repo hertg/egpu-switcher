@@ -15,6 +15,8 @@ import (
 
 const path = "/etc/X11/xorg.conf.d/99-egpu-switcher.conf"
 
+var override bool
+
 var switchCommand = &cobra.Command{
 	Use:   "switch [auto|internal|external]",
 	Short: "todo",
@@ -66,10 +68,30 @@ var switchCommand = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(switchCommand)
+	switchCommand.PersistentFlags().BoolVar(&override, "override", false, "switch to the eGPU even if there are no displays attached") // todo: usage
 }
 
 func switchEgpu(gpu *pci.GPU) error {
 	driver := viper.GetString("egpu.driver")
+
+	if driver != "nvidia" {
+		displayCount, err := gpu.NumberOfDisplays()
+		if err != nil {
+			return err
+		}
+		isConnected, err := gpu.HasDisplaysConnected()
+		if err != nil {
+			return err
+		}
+		if displayCount > 0 && !isConnected {
+			logger.Warn("No eGPU attached display detected with open source drivers. (Of %d eGPU outputs detected) Internal mode and setting DRI_PRIME variable are recommended for this configuration.\n", displayCount)
+			if !override {
+				return fmt.Errorf("Not setting eGPU mode. Run the command with the '--override' flag to force loading eGPU mode")
+			}
+			logger.Debug("-> Overridden: setting eGPU mode")
+		}
+	}
+
 	conf := xorg.GenerateConf("Device0", driver, gpu.XorgPCIString())
 	_, err := os.Stat(path)
 	if err != nil {
