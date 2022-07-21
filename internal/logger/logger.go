@@ -33,3 +33,7 @@ func Warn(format string, args ...any) (int, error) {
 func Error(format string, args ...any) (int, error) {
 	return print(red("[error]"), format, args...)
 }
+
+func Success(format string, args ...any) (int, error) {
+	return print(green("[ok]"), format, args...)
+}

@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const path = "/etc/X11/xorg.conf.d/99-egpu-switcher.conf"
+const x11ConfPath = "/etc/X11/xorg.conf.d/99-egpu-switcher.conf"
 
 var override bool
 
@@ -30,10 +30,10 @@ var switchCommand = &cobra.Command{
 		arg := args[0]
 
 		// create /etc/X11/xorg.conf.d/ if directory doesn't exist
-		dir := filepath.Dir(path)
+		dir := filepath.Dir(x11ConfPath)
 		err := os.MkdirAll(dir, 0755)
 		if err != nil {
-			return fmt.Errorf("unable to create missing directories for %s", path)
+			return fmt.Errorf("unable to create missing directories for %s", x11ConfPath)
 		}
 
 		id := viper.GetInt("egpu.id")
@@ -92,42 +92,10 @@ func switchEgpu(gpu *pci.GPU) error {
 		}
 	}
 
-	conf := xorg.GenerateConf("Device0", driver, gpu.XorgPCIString())
-	_, err := os.Stat(path)
-	if err != nil {
-		f, err := os.Create(path)
-		if err != nil {
-			return fmt.Errorf("unable to create file %s", path)
-		}
-		_, err = f.Write([]byte(conf))
-		if err != nil {
-			return fmt.Errorf("unable to write config to file %s", path)
-		}
-		if verbose {
-			logger.Debug("the file %s has been created", path)
-		}
-		return nil
-	}
-	if verbose {
-		logger.Debug("the file %s already exists", path)
-	}
-	return nil
+	conf := xorg.RenderConf("Device0", driver, gpu.XorgPCIString())
+	return xorg.CreateEgpuFile(x11ConfPath, conf, verbose)
 }
 
 func switchInternal() error {
-	f, _ := os.Stat(path)
-	if f != nil {
-		err := os.Remove(path)
-		if err != nil {
-			return fmt.Errorf("unable to remove file %s", path)
-		}
-		if verbose {
-			logger.Debug("the file %s has been removed", path)
-		}
-		return nil
-	}
-	if verbose {
-		logger.Debug("the file %s is already absent", path)
-	}
-	return nil
+	return xorg.RemoveEgpuFile(x11ConfPath, verbose)
 }

@@ -13,6 +13,12 @@ func (s Systemd) CreateService() error {
 }
 
 func (s Systemd) TeardownService() error {
+	// todo: systemctl show -p LoadState egpu.service | sed 's/LoadState=//g') == "loaded" (only attempt stop if service is loaded)
+	// todo: systemctl stop egpu.service
+	// todo: systemctl disable egpu.service
+	// todo: delete service file
+	// todo: systemctl daemon-reload
+	// todo: reset-failed
 	return fmt.Errorf("not implemented")
 }
 

@@ -23,10 +23,10 @@ var configCommand = &cobra.Command{
 		gpus := pci.ReadGPUs()
 		amount := int(len(gpus))
 
-		if amount < 2 {
+		/*if amount < 2 {
 			logger.Error("only one GPU found... please plug in your eGPU to continue")
 			os.Exit(1)
-		}
+		}*/
 
 		fmt.Println()
 		fmt.Printf("Found %d possible GPU(s)...\n", amount)
@@ -62,7 +62,9 @@ var configCommand = &cobra.Command{
 		viper.Set("egpu.id", selected.Identifier())
 		viper.WriteConfig()
 
-		logger.Info("Your selection has been saved to the config file")
+		fmt.Println()
+
+		logger.Success("Your selection has been saved to the config file")
 
 		return nil
 	},

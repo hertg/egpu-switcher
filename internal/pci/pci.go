@@ -122,7 +122,7 @@ func getPCIDB() *pcidb.PCIDB {
 func ReadGPUs() []*GPU {
 	pci, err := ghw.PCI()
 	if err != nil {
-		panic("unable to get pci informaticon")
+		panic("unable to get pci information")
 	}
 	pdb := getPCIDB()
 	var gpus []*GPU
