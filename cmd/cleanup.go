@@ -19,7 +19,7 @@ var cleanupCommand = &cobra.Command{
 		}
 
 		if hard {
-			// remove the complete egpu-switcher directory in /etc
+			// remove /etc/egpu-switcher
 			err = os.RemoveAll(configPath)
 			if err != nil {
 				return err

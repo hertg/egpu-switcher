@@ -2,14 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/user"
 	"strings"
 
 	"github.com/hertg/egpu-switcher/internal/logger"
 	"github.com/spf13/cobra"
-	"github.com/spf13/cobra/doc"
 	"github.com/spf13/viper"
 )
 
@@ -35,17 +33,9 @@ func initConfig() {
 	viper.SetConfigType("yaml")
 	viper.SetConfigName("config")
 
-	// default values
-	viper.SetDefault("verbose", false)
-
-	// bind cobra flags to viper config
-	//viper.BindPFlags(rootCmd.Flags())
-
 	// map environment variables with underscores
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
-
-	//verbose = viper.GetBool("verbose")
 
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -54,7 +44,8 @@ func initConfig() {
 			if verbose {
 				logger.Debug("no configuration file found, creating a new one at %s\n", configPath)
 			}
-			os.MkdirAll(configPath, 0744)
+			err = os.MkdirAll(configPath, 0744)
+			cobra.CheckErr(err)
 			err = viper.SafeWriteConfig()
 			cobra.CheckErr(err)
 		default:
@@ -66,7 +57,7 @@ func initConfig() {
 
 func Execute() {
 
-	header := &doc.GenManHeader{
+	/*header := &doc.GenManHeader{
 		Title:   "MINE",
 		Section: "3",
 	}
@@ -74,7 +65,7 @@ func Execute() {
 	err := doc.GenManTree(rootCmd, header, "./tmp")
 	if err != nil {
 		log.Fatal(err)
-	}
+	}*/
 
 	rootCheck()
 	if err := rootCmd.Execute(); err != nil {
