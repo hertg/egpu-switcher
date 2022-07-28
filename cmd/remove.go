@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -51,34 +50,28 @@ var removeCommand = &cobra.Command{
 
 		go func() {
 			sig := <-sigChan
-			_ = sig
-			//fmt.Println(sig)
+			logger.Debug("got signal: %s", sig)
+			dmServiceName, err := os.Readlink("/etc/systemd/system/display-manager.service")
+			dmServiceName = filepath.Base(dmServiceName)
+			dmStatusChange, _ := systemd.SubscribeUnitsCustom(500*time.Millisecond, 0, func(u1, u2 *dbus.UnitStatus) bool { return *u1 != *u2 }, func(s string) bool { return s != dmServiceName })
+			dmInactive := make(chan bool)
+			go func() {
+				for {
+					select {
+					case status := <-dmStatusChange:
+						for _, v := range status {
+							if v.ActiveState != "active" {
+								dmInactive <- true
+								return
+							}
+						}
 
-			// todo: wait until display-manager is no longer 'active'
-			dm, err := os.Readlink("/etc/systemd/system/display-manager.service")
-			dm = filepath.Base(dm)
-			//dm = strings.TrimSuffix(dm, ".service")
-			fmt.Printf("%+v\n", dm)
-			// todo: Requires systemd v230 or higher. (https://github.com/systemd/systemd/releases/tag/v230)
-
-			for {
-				status, err := systemd.ListUnitsByNamesContext(context.Background(), []string{dm})
-				if err != nil {
-					panic("unable to get display manager status information")
+					}
 				}
-				if len(status) != 1 {
-					panic("expected to find only one display manager service")
-				}
-				if status[0].ActiveState != "active" {
-					break
-				}
-				<-time.After(500 * time.Millisecond)
-			}
+			}()
 
-			fmt.Println("display manager is no longer active")
-
-			done <- true
-			return
+			<-dmInactive // block until display manager is inactive
+			logger.Debug("display-manager '%s' has become inactive", dmServiceName)
 
 			if driver == "nvidia" {
 				// systemctl stop nvidia-persistenced.service
@@ -92,7 +85,6 @@ var removeCommand = &cobra.Command{
 					if err != nil {
 						logger.Error("unable to unload '%s' kernel module: %s", mod, err)
 					}
-					// todo: modprobe -r $mod
 				}
 			}
 
@@ -101,15 +93,13 @@ var removeCommand = &cobra.Command{
 				if err != nil {
 					panic(err)
 				}
-				// todo: enable
-				/*_, err = f.Write([]byte{1})
+				_, err = f.Write([]byte{1})
 				if err != nil {
-					return err
-				}*/
-				fmt.Println(f)
+					logger.Error("unable to remove %s: %s", path, err)
+					return
+				}
 			}
 
-			// systemctl start display-manager.service
 			_, err = systemd.StartUnit("display-manager", "replace", nil)
 			if err != nil {
 				logger.Error("unable to start display-manager: %s", err)
@@ -119,15 +109,12 @@ var removeCommand = &cobra.Command{
 		}()
 
 		// systemctl stop display-manager.service
-		fmt.Println("todo: stop display-manager")
-		/*_, err = systemd.StopUnit("display-manager", "replace", nil)
+		_, err = systemd.StopUnit("display-manager", "replace", nil)
 		if err != nil {
 			logger.Error("unable to stop display-manager: %s", err)
-		}*/
+		}
 
 		<-done
-		fmt.Println("exiting")
-
 		return nil
 	},
 }
