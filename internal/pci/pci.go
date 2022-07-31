@@ -164,6 +164,18 @@ func ReadGPUs() []*GPU {
 	return gpus
 }
 
+func IsModuleRequired(module string) bool {
+	pci, err := ghw.PCI()
+	if err != nil {
+		panic("unable to get pci information")
+	}
+	pdb := getPCIDB()
+	var gpus []*GPU
+	for _, d := range pci.Devices {
+		d.ProgrammingInterface
+	}
+}
+
 func Find(id uint64) *GPU {
 	gpus := ReadGPUs()
 	for _, gpu := range gpus {

@@ -100,6 +100,15 @@ var removeCommand = &cobra.Command{
 				}
 			}
 
+			// todo: load kernel modules again, if a gpu requiring the driver is still connected
+			// if [ $(lspci -k | grep -c ${vga_driver}) -gt 0 ]; then
+			// 	modprobe ${vga_driver}
+			// 	if [ ${vga_driver} = "nvidia" ]; then
+			// 		modprobe nvidia_drm
+			// 	fi
+			// 	sleep 1
+			// fi
+
 			_, err = systemd.StartUnit("display-manager", "replace", nil)
 			if err != nil {
 				logger.Error("unable to start display-manager: %s", err)
