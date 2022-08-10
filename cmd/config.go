@@ -50,13 +50,13 @@ var configCommand = &cobra.Command{
 		}
 
 		selected := gpus[num-1]
-		driver, err := selected.GuessDriver()
-		if err != nil {
-			logger.Info(err.Error())
-			fmt.Printf("Please manually enter the driver to be used: ")
-			answer, _ = reader.ReadString('\n')
-			driver = strings.TrimSuffix(answer, "\n")
-		}
+		driver := selected.PciDevice.Driver
+		// if err != nil {
+		// 	logger.Info(err.Error())
+		// 	fmt.Printf("Please manually enter the driver to be used: ")
+		// 	answer, _ = reader.ReadString('\n')
+		// 	driver = strings.TrimSuffix(answer, "\n")
+		// }
 
 		viper.Set("egpu.driver", driver)
 		viper.Set("egpu.id", selected.Identifier())

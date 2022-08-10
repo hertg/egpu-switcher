@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
@@ -32,15 +31,15 @@ var removeCommand = &cobra.Command{
 			return fmt.Errorf("the egpu is not connected")
 		}
 
-		prefix, _, found := strings.Cut(gpu.Address(), ".")
-		if !found {
-			return fmt.Errorf("unable to get device id from pci address %s", gpu.Address())
-		}
-		pattern := fmt.Sprintf("/sys/bus/pci/devices/%s.[0-9]*/remove", prefix)
-		matches, err := filepath.Glob(pattern)
-		if err != nil {
-			return err
-		}
+		// prefix, _, found := strings.Cut(gpu.Address(), ".")
+		// if !found {
+		// 	return fmt.Errorf("unable to get device id from pci address %s", gpu.Address())
+		// }
+		// pattern := fmt.Sprintf("/sys/bus/pci/devices/%s.[0-9]*/remove", prefix)
+		// matches, err := filepath.Glob(pattern)
+		// if err != nil {
+		// 	return err
+		// }
 
 		systemd, err := dbus.NewSystemConnection()
 		if err != nil {
@@ -88,17 +87,21 @@ var removeCommand = &cobra.Command{
 				}
 			}
 
-			for _, path := range matches {
-				f, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0220)
-				if err != nil {
-					panic(err)
-				}
-				_, err = f.Write([]byte{1})
-				if err != nil {
-					logger.Error("unable to remove %s: %s", path, err)
-					return
-				}
+			err = gpu.PciDevice.Remove()
+			if err != nil {
+				panic(err)
 			}
+			// for _, path := range matches {
+			// 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0220)
+			// 	if err != nil {
+			// 		panic(err)
+			// 	}
+			// 	_, err = f.Write([]byte{1})
+			// 	if err != nil {
+			// 		logger.Error("unable to remove %s: %s", path, err)
+			// 		return
+			// 	}
+			// }
 
 			// todo: load kernel modules again, if a gpu requiring the driver is still connected
 			// if [ $(lspci -k | grep -c ${vga_driver}) -gt 0 ]; then
