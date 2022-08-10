@@ -33,6 +33,12 @@ var configCommand = &cobra.Command{
 		fmt.Println()
 		for i, gpu := range gpus {
 			fmt.Printf("%d: %s\n", i+1, gpu.DisplayName())
+			fmt.Printf("%s\n", gpu.XorgPCIString())
+			hasDisp, _ := gpu.HasDisplaysConnected()
+			numDisp, _ := gpu.NumOfConnectedDisplays()
+			fmt.Printf("%v\n", hasDisp)
+			fmt.Printf("%d\n", numDisp)
+			fmt.Printf("%d\n", gpu.Identifier())
 		}
 		fmt.Println()
 

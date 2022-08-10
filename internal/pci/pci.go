@@ -49,35 +49,42 @@ func (g *GPU) Outputs() {
 
 func (g *GPU) DisplayName() string {
 	bold := color.New(color.Bold).SprintFunc()
-	deviceName := g.PciDevice.Product.Label
-	if g.PciDevice.Subdevice != nil {
-		deviceName = g.PciDevice.Subdevice.Label
-	}
-	return fmt.Sprintf(
-		"\t%s (rev %02x)\n\t%s (%s)",
-		bold(deviceName),
+	str := fmt.Sprintf(
+		"\t%s (rev %02x)\n\t%s\n",
+		bold(g.PciDevice.Product.Label),
 		g.PciDevice.Config.Revision(),
 		g.PciDevice.Vendor.Label,
-		g.PciDevice.Subvendor.Label,
 	)
+	if v := g.PciDevice.Subvendor; v != nil {
+		if d := g.PciDevice.Subdevice; d != nil {
+			str = fmt.Sprintf("%s\t%s %s\n", str, v.Label, d.Label)
+		}
+	}
+	return str
 }
 
-func (g *GPU) HasDisplaysConnected() (bool, error) {
+func (g *GPU) NumOfConnectedDisplays() (uint, error) {
 	pattern := fmt.Sprintf("%s/drm/card[0-9]*/card[0-9]*-*/status", g.PciDevice.SysfsPath())
 	matches, err := filepath.Glob(pattern)
+	num := uint(0)
 	if err != nil {
-		return false, err
+		return num, err
 	}
 	for _, path := range matches {
 		contents, err := os.ReadFile(path)
 		if err != nil {
-			return false, err
+			return num, err
 		}
 		if strings.TrimSuffix(string(contents), "\n") == "connected" {
-			return true, nil
+			num += 1
 		}
 	}
-	return false, nil
+	return num, nil
+}
+
+func (g *GPU) HasDisplaysConnected() (bool, error) {
+	num, err := g.NumOfConnectedDisplays()
+	return num > 0, err
 }
 
 func (g *GPU) NumberOfDisplays() (int, error) {
