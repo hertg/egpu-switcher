@@ -10,13 +10,6 @@ import (
 	"github.com/hertg/gopci/pkg/pci"
 )
 
-// todo: eliminate external dependency to ghw by using sysfs directly
-
-type IdName struct {
-	id   string
-	name string
-}
-
 type GPU struct {
 	PciDevice *pci.Device
 }
@@ -43,27 +36,25 @@ func (g *GPU) Identifier() uint64 {
 	return uint64(g.PciDevice.Vendor.ID)<<48 | uint64(g.PciDevice.Product.ID)<<32 | subven<<16 | subdev
 }
 
-func (g *GPU) Outputs() {
-	// glob := filepath.Join("drm", "card*", "card*-*", "status")
-}
-
 func (g *GPU) DisplayName() string {
 	bold := color.New(color.Bold).SprintFunc()
-	str := fmt.Sprintf(
-		"\t%s (rev %02x)\n\t%s\n",
-		bold(g.PciDevice.Product.Label),
-		g.PciDevice.Config.Revision(),
-		g.PciDevice.Vendor.Label,
-	)
-	if v := g.PciDevice.Subvendor; v != nil {
-		if d := g.PciDevice.Subdevice; d != nil {
-			str = fmt.Sprintf("%s\t%s %s\n", str, v.Label, d.Label)
+	cyan := color.New(color.FgHiCyan).SprintFunc()
+	red := color.New(color.FgHiRed).SprintFunc()
+	str := fmt.Sprintf("\t%s %s", bold(g.PciDevice.Vendor.Label), g.PciDevice.Product.Label)
+	if sv := g.PciDevice.Subvendor; sv != nil && !strings.HasPrefix(sv.Label, "Subvendor") {
+		if sd := g.PciDevice.Subdevice; sd != nil && !strings.HasPrefix(sd.Label, "Subdevice") {
+			str = fmt.Sprintf("\t%s %s", bold(sv.Label), sd.Label)
 		}
+	}
+	if d := g.PciDevice.Driver; d != nil {
+		str = fmt.Sprintf("%s (%s)", str, cyan(*d))
+	} else {
+		str = fmt.Sprintf("%s (%s)", str, red("unknown"))
 	}
 	return str
 }
 
-func (g *GPU) NumOfConnectedDisplays() (uint, error) {
+func (g *GPU) ConnectedOutputs() (uint, error) {
 	pattern := fmt.Sprintf("%s/drm/card[0-9]*/card[0-9]*-*/status", g.PciDevice.SysfsPath())
 	matches, err := filepath.Glob(pattern)
 	num := uint(0)
@@ -75,19 +66,14 @@ func (g *GPU) NumOfConnectedDisplays() (uint, error) {
 		if err != nil {
 			return num, err
 		}
-		if strings.TrimSuffix(string(contents), "\n") == "connected" {
+		if strings.HasPrefix(string(contents), "connected") {
 			num += 1
 		}
 	}
 	return num, nil
 }
 
-func (g *GPU) HasDisplaysConnected() (bool, error) {
-	num, err := g.NumOfConnectedDisplays()
-	return num > 0, err
-}
-
-func (g *GPU) NumberOfDisplays() (int, error) {
+func (g *GPU) Outputs() (int, error) {
 	pattern := fmt.Sprintf("%s/drm/card[0-9]*/card[0-9]*-*/status", g.PciDevice.SysfsPath())
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
@@ -96,10 +82,6 @@ func (g *GPU) NumberOfDisplays() (int, error) {
 	return len(matches), nil
 }
 
-//func (g *GPU) LspciDisplayName() string {
-//	return fmt.Sprintf("%s %s: %s (%s) %s (rev %02x)", g.hexAddress, g.subclassName, g.vendorName, g.subvendorName, g.deviceName, g.revision)
-//}
-
 func contains(str string, substr string) bool {
 	return strings.Contains(strings.ToLower(str), substr)
 }
@@ -107,6 +89,7 @@ func contains(str string, substr string) bool {
 func ReadGPUs() []*GPU {
 	gpuFilter := func(device *pci.Device) bool {
 		return device.Class.Class() == 0x03
+		// return true
 	}
 	devices, err := pci.Scan(gpuFilter)
 	if err != nil {

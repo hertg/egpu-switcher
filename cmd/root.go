@@ -57,15 +57,17 @@ func initConfig() {
 
 func Execute() {
 
-	/*header := &doc.GenManHeader{
-		Title:   "MINE",
-		Section: "3",
-	}
+	// header := &doc.GenManHeader{
+	// 	Title:   "egpu-switcher",
+	// 	Section: "1",
+	// 	Source:  "egpu-switcher-0.0.1",
+	// 	Manual:  "",
+	// }
 
-	err := doc.GenManTree(rootCmd, header, "./tmp")
-	if err != nil {
-		log.Fatal(err)
-	}*/
+	// err := doc.GenManTree(rootCmd, header, "./docs")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	rootCheck()
 	if err := rootCmd.Execute(); err != nil {

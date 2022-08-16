@@ -33,12 +33,6 @@ var configCommand = &cobra.Command{
 		fmt.Println()
 		for i, gpu := range gpus {
 			fmt.Printf("%d: %s\n", i+1, gpu.DisplayName())
-			fmt.Printf("%s\n", gpu.XorgPCIString())
-			hasDisp, _ := gpu.HasDisplaysConnected()
-			numDisp, _ := gpu.NumOfConnectedDisplays()
-			fmt.Printf("%v\n", hasDisp)
-			fmt.Printf("%d\n", numDisp)
-			fmt.Printf("%d\n", gpu.Identifier())
 		}
 		fmt.Println()
 
@@ -57,12 +51,13 @@ var configCommand = &cobra.Command{
 
 		selected := gpus[num-1]
 		driver := selected.PciDevice.Driver
-		// if err != nil {
-		// 	logger.Info(err.Error())
-		// 	fmt.Printf("Please manually enter the driver to be used: ")
-		// 	answer, _ = reader.ReadString('\n')
-		// 	driver = strings.TrimSuffix(answer, "\n")
-		// }
+		if driver == nil {
+			// logger.Info(err.Error())
+			fmt.Printf("Please manually enter the driver to be used: ")
+			answer, _ = reader.ReadString('\n')
+			d := strings.TrimSuffix(answer, "\n")
+			driver = &d
+		}
 
 		viper.Set("egpu.driver", driver)
 		viper.Set("egpu.id", selected.Identifier())
