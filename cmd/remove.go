@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -20,8 +21,10 @@ var removeCommand = &cobra.Command{
 	Use: "remove",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
+		ctx := context.Background()
+
 		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 		done := make(chan bool, 1)
 
 		id := uint64(viper.GetInt("egpu.id"))
@@ -41,7 +44,7 @@ var removeCommand = &cobra.Command{
 		// 	return err
 		// }
 
-		systemd, err := dbus.NewSystemConnection()
+		systemd, err := dbus.NewSystemdConnectionContext(ctx)
 		if err != nil {
 			return fmt.Errorf("unable to connect to dbus")
 		}
@@ -51,6 +54,13 @@ var removeCommand = &cobra.Command{
 		dmServiceName = filepath.Base(dmServiceName)
 
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error("goroutine panicked: %+v", r)
+					done <- true
+				}
+			}()
+
 			sig := <-sigChan
 			logger.Debug("got signal: %s", sig)
 			dmStatusChange, _ := systemd.SubscribeUnitsCustom(500*time.Millisecond, 0, func(u1, u2 *dbus.UnitStatus) bool { return *u1 != *u2 }, func(s string) bool { return s != dmServiceName })
@@ -75,12 +85,15 @@ var removeCommand = &cobra.Command{
 
 			if driver == "nvidia" {
 				// systemctl stop nvidia-persistenced.service
-				_, err := systemd.StopUnit("nvidia-persistenced", "replace", nil)
+				ch := make(chan string)
+				_, err := systemd.StopUnitContext(ctx, "nvidia-persistenced", "replace", ch)
 				if err != nil {
 					logger.Error("unable to stop nvidia-persistenced: %s", err.Error())
 				}
+				// logger.Debug("got result from stopping service: %s", <-ch)
 				modules := []string{"nvidia_uvm", "nvidia_drm", "nvidia_modeset", "nvidia"}
 				for _, mod := range modules {
+					logger.Info("unload kernel module: %s", mod)
 					err = unix.DeleteModule(mod, 0)
 					if err != nil {
 						logger.Error("unable to unload '%s' kernel module: %s", mod, err)
@@ -88,8 +101,10 @@ var removeCommand = &cobra.Command{
 				}
 			}
 
+			logger.Info("removing pci device...")
 			err = gpu.PciDevice.Remove()
 			if err != nil {
+				logger.Error("unable to remove pci device: %s", err)
 				panic(err)
 			}
 			// for _, path := range matches {
@@ -113,6 +128,7 @@ var removeCommand = &cobra.Command{
 			// 	sleep 1
 			// fi
 
+			logger.Info("starting %s again", dmServiceName)
 			_, err = systemd.StartUnit(dmServiceName, "replace", nil)
 			if err != nil {
 				logger.Error("unable to start display-manager: %s", err)
