@@ -47,11 +47,12 @@ var removeCommand = &cobra.Command{
 		}
 		defer systemd.Close()
 
+		dmServiceName, err := os.Readlink("/etc/systemd/system/display-manager.service")
+		dmServiceName = filepath.Base(dmServiceName)
+
 		go func() {
 			sig := <-sigChan
 			logger.Debug("got signal: %s", sig)
-			dmServiceName, err := os.Readlink("/etc/systemd/system/display-manager.service")
-			dmServiceName = filepath.Base(dmServiceName)
 			dmStatusChange, _ := systemd.SubscribeUnitsCustom(500*time.Millisecond, 0, func(u1, u2 *dbus.UnitStatus) bool { return *u1 != *u2 }, func(s string) bool { return s != dmServiceName })
 			dmInactive := make(chan bool)
 			go func() {
@@ -112,7 +113,7 @@ var removeCommand = &cobra.Command{
 			// 	sleep 1
 			// fi
 
-			_, err = systemd.StartUnit("display-manager", "replace", nil)
+			_, err = systemd.StartUnit(dmServiceName, "replace", nil)
 			if err != nil {
 				logger.Error("unable to start display-manager: %s", err)
 			}
@@ -121,7 +122,7 @@ var removeCommand = &cobra.Command{
 		}()
 
 		// systemctl stop display-manager.service
-		_, err = systemd.StopUnit("display-manager", "replace", nil)
+		_, err = systemd.StopUnit(dmServiceName, "replace", nil)
 		if err != nil {
 			logger.Error("unable to stop display-manager: %s", err)
 		}
