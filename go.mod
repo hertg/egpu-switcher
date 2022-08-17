@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/coreos/go-systemd/v22 v22.3.2
 	github.com/fatih/color v1.13.0
-	github.com/hertg/gopci v0.0.6
+	github.com/hertg/gopci v0.0.7
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a

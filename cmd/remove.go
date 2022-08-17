@@ -12,6 +12,7 @@ import (
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/hertg/egpu-switcher/internal/logger"
 	"github.com/hertg/egpu-switcher/internal/pci"
+	"github.com/hertg/egpu-switcher/internal/xorg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sys/unix"
@@ -34,21 +35,16 @@ var removeCommand = &cobra.Command{
 			return fmt.Errorf("the egpu is not connected")
 		}
 
-		// prefix, _, found := strings.Cut(gpu.Address(), ".")
-		// if !found {
-		// 	return fmt.Errorf("unable to get device id from pci address %s", gpu.Address())
-		// }
-		// pattern := fmt.Sprintf("/sys/bus/pci/devices/%s.[0-9]*/remove", prefix)
-		// matches, err := filepath.Glob(pattern)
-		// if err != nil {
-		// 	return err
-		// }
-
 		systemd, err := dbus.NewSystemdConnectionContext(ctx)
 		if err != nil {
 			return fmt.Errorf("unable to connect to dbus")
 		}
 		defer systemd.Close()
+
+		err = xorg.RemoveEgpuFile(x11ConfPath, verbose)
+		if err != nil {
+			return err
+		}
 
 		dmServiceName, err := os.Readlink("/etc/systemd/system/display-manager.service")
 		dmServiceName = filepath.Base(dmServiceName)
@@ -107,18 +103,6 @@ var removeCommand = &cobra.Command{
 				logger.Error("unable to remove pci device: %s", err)
 				panic(err)
 			}
-			// for _, path := range matches {
-			// 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0220)
-			// 	if err != nil {
-			// 		panic(err)
-			// 	}
-			// 	_, err = f.Write([]byte{1})
-			// 	if err != nil {
-			// 		logger.Error("unable to remove %s: %s", path, err)
-			// 		return
-			// 	}
-			// }
-
 			// todo: load kernel modules again, if a gpu requiring the driver is still connected
 			// if [ $(lspci -k | grep -c ${vga_driver}) -gt 0 ]; then
 			// 	modprobe ${vga_driver}
