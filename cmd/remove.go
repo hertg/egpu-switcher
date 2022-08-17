@@ -103,17 +103,23 @@ var removeCommand = &cobra.Command{
 				logger.Error("unable to remove pci device: %s", err)
 				panic(err)
 			}
-			// todo: load kernel modules again, if a gpu requiring the driver is still connected
-			// if [ $(lspci -k | grep -c ${vga_driver}) -gt 0 ]; then
-			// 	modprobe ${vga_driver}
-			// 	if [ ${vga_driver} = "nvidia" ]; then
-			// 		modprobe nvidia_drm
-			// 	fi
-			// 	sleep 1
-			// fi
+
+			// load kernel modules again, if a gpu requiring the driver is still connected
+			gpus := pci.ReadGPUs()
+			for _, gpu := range gpus {
+				if *gpu.PciDevice.Driver == driver {
+					// another gpu still requires the now unloaded driver, so reload it here
+					// TODO modprobe ${driver}
+					if driver == "nvidia" {
+						// TODO: modprobe nvidia_drm
+					}
+					// TODO: sleep 1s ?
+					break
+				}
+			}
 
 			logger.Info("starting %s again", dmServiceName)
-			_, err = systemd.StartUnit(dmServiceName, "replace", nil)
+			_, err = systemd.StartUnitContext(ctx, dmServiceName, "replace", nil)
 			if err != nil {
 				logger.Error("unable to start display-manager: %s", err)
 			}
@@ -122,7 +128,7 @@ var removeCommand = &cobra.Command{
 		}()
 
 		// systemctl stop display-manager.service
-		_, err = systemd.StopUnit(dmServiceName, "replace", nil)
+		_, err = systemd.StopUnitContext(ctx, dmServiceName, "replace", nil)
 		if err != nil {
 			logger.Error("unable to stop display-manager: %s", err)
 		}
