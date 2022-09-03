@@ -22,6 +22,10 @@ var removeCommand = &cobra.Command{
 	Use: "remove",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
+		if !isRoot {
+			return fmt.Errorf("you need root privileges to remove egpu")
+		}
+
 		ctx := context.Background()
 
 		sigChan := make(chan os.Signal, 1)

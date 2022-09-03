@@ -22,6 +22,10 @@ var switchCommand = &cobra.Command{
 	Short: "todo",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
+		if !isRoot {
+			return fmt.Errorf("you need root privileges to switch gpu")
+		}
+
 		// if no argument is provided, default to 'auto'
 		if len(args) == 0 {
 			args = []string{"auto"}

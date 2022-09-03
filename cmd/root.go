@@ -12,8 +12,10 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:          "egpu-switcher",
-	SilenceUsage: true,
+	Use:               "egpu-switcher",
+	Short:             "Distribution agnostic eGPU script that works with NVIDIA and AMD cards.",
+	SilenceUsage:      true,
+	DisableAutoGenTag: true,
 	CompletionOptions: cobra.CompletionOptions{
 		HiddenDefaultCmd: true,
 	},
@@ -22,6 +24,9 @@ var rootCmd = &cobra.Command{
 const configPath = "/etc/egpu-switcher"
 
 var verbose bool
+var isRoot bool
+
+//var noroot bool
 
 func init() {
 	cobra.OnInitialize(initConfig)
@@ -37,39 +42,37 @@ func initConfig() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
-	err := viper.ReadInConfig()
+	u, err := user.Current()
 	if err != nil {
-		switch err.(type) {
-		case viper.ConfigFileNotFoundError:
-			if verbose {
-				logger.Debug("no configuration file found, creating a new one at %s\n", configPath)
+		logger.Warn("unable to get current user. if you run into permission issues, retry running as root")
+		isRoot = true // just assume :)
+	} else if u.Uid == "0" {
+		isRoot = true
+	}
+
+	// only read in / write default config when user is root
+	// simply ignore and don't load config if non-root
+	if isRoot {
+		err := viper.ReadInConfig()
+		if err != nil {
+			switch err.(type) {
+			case viper.ConfigFileNotFoundError:
+				if verbose {
+					logger.Debug("no configuration file found, creating a new one at %s\n", configPath)
+				}
+				err = os.MkdirAll(configPath, 0744)
+				cobra.CheckErr(err)
+				err = viper.SafeWriteConfig()
+				cobra.CheckErr(err)
+			default:
+				fmt.Println("unable to load config:", err)
+				os.Exit(1)
 			}
-			err = os.MkdirAll(configPath, 0744)
-			cobra.CheckErr(err)
-			err = viper.SafeWriteConfig()
-			cobra.CheckErr(err)
-		default:
-			fmt.Println("unable to load config:", err)
-			os.Exit(1)
 		}
 	}
 }
 
 func Execute() {
-
-	// header := &doc.GenManHeader{
-	// 	Title:   "egpu-switcher",
-	// 	Section: "1",
-	// 	Source:  "egpu-switcher-0.0.1",
-	// 	Manual:  "",
-	// }
-
-	// err := doc.GenManTree(rootCmd, header, "./docs")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	rootCheck()
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -77,12 +80,20 @@ func Execute() {
 
 func rootCheck() {
 	u, err := user.Current()
+
 	if err != nil {
-		fmt.Println("unable to get current user. if you run into permission issues, re-try running as root")
+		fmt.Println("unable to get current user. if you run into permission issues, retry running as root")
+		isRoot = true
 		return
 	}
+
+	if err == nil && u.Uid != "0" {
+		logger.Info("script is run as non-root user")
+	}
+
 	if u.Uid != "0" {
 		fmt.Println("please run as root")
 		os.Exit(1)
 	}
+	isRoot = true
 }

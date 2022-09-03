@@ -16,9 +16,12 @@ import (
 
 var configCommand = &cobra.Command{
 	Use:   "config",
-	Short: "configure egpu-switcher",
-	Long:  "",
+	Short: "Configure egpu-switcher",
 	RunE: func(cmd *cobra.Command, args []string) error {
+
+		if !isRoot {
+			return fmt.Errorf("you need root privileges to configure egpu-switcher")
+		}
 
 		gpus := pci.ReadGPUs()
 		amount := int(len(gpus))

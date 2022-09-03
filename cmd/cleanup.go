@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/hertg/egpu-switcher/internal/logger"
@@ -9,8 +10,13 @@ import (
 )
 
 var cleanupCommand = &cobra.Command{
-	Use: "cleanup",
+	Use:   "cleanup",
+	Short: "Remove any xorg files egpu-switcher might have created",
 	RunE: func(cmd *cobra.Command, args []string) error {
+
+		if !isRoot {
+			return fmt.Errorf("you need root privileges to cleanup egpu-switcher")
+		}
 
 		// remove the file from /etc/X11/xorg.conf.d (if present)
 		err := xorg.RemoveEgpuFile(x11ConfPath, verbose)
@@ -35,5 +41,5 @@ var hard bool
 
 func init() {
 	rootCmd.AddCommand(cleanupCommand)
-	cleanupCommand.PersistentFlags().BoolVar(&hard, "hard", false, "also remove configuration files")
+	cleanupCommand.PersistentFlags().BoolVar(&hard, "hard", false, "remove configuration files too")
 }
