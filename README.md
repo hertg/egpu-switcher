@@ -1,5 +1,8 @@
 # egpu-switcher
-> *For more information and user feedback, take a look at my [Thread](https://egpu.io/forums/thunderbolt-linux-setup/ubuntu-19-04-easy-to-use-setup-script-for-your-egpu/) over on egpu.io or open an issue on Github.*
+
+> **Note**: The main branch is now tracking a completely new version of egpu-switcher
+> that hasn't been fully released yet. To get the `README` of the most recent release
+> head over to [the `legacy` branch](https://github.com/hertg/egpu-switcher/tree/legacy).
 
 Distribution agnostic eGPU script that works with **NVIDIA** and **AMD** cards.
 
