@@ -1,4 +1,3 @@
-
 <div align="center">
   <h1><strong>egpu-switcher</strong></h1>
   <p>
