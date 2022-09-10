@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/hertg/egpu-switcher/internal/logger"
+	"github.com/hertg/egpu-switcher/internal/service"
 	"github.com/spf13/cobra"
 )
 
@@ -13,9 +16,22 @@ var setupCommand = &cobra.Command{
 		if !isRoot {
 			return fmt.Errorf("you need root privileges to setup egpu-switcher")
 		}
+
+		ctx := context.Background()
+
+		init, err := service.GetInitSystem()
+		if err != nil {
+			return err
+		}
+
 		// todo: trigger config if no config exists (unless --no-prompt is used)
-		// todo: create init system service
-		return fmt.Errorf("not implemented")
+
+		if err := init.CreateService(ctx); err != nil {
+			return err
+		}
+
+		logger.Success("setup successful")
+		return nil
 	},
 }
 

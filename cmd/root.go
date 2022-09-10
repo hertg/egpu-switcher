@@ -16,6 +16,7 @@ var rootCmd = &cobra.Command{
 	Short:             "Distribution agnostic eGPU script that works with NVIDIA and AMD cards.",
 	SilenceUsage:      true,
 	DisableAutoGenTag: true,
+
 	CompletionOptions: cobra.CompletionOptions{
 		HiddenDefaultCmd: true,
 	},
@@ -25,8 +26,6 @@ const configPath = "/etc/egpu-switcher"
 
 var verbose bool
 var isRoot bool
-
-//var noroot bool
 
 func init() {
 	cobra.OnInitialize(initConfig)
@@ -76,24 +75,4 @@ func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
-}
-
-func rootCheck() {
-	u, err := user.Current()
-
-	if err != nil {
-		fmt.Println("unable to get current user. if you run into permission issues, retry running as root")
-		isRoot = true
-		return
-	}
-
-	if err == nil && u.Uid != "0" {
-		logger.Info("script is run as non-root user")
-	}
-
-	if u.Uid != "0" {
-		fmt.Println("please run as root")
-		os.Exit(1)
-	}
-	isRoot = true
 }

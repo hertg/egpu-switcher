@@ -9,6 +9,7 @@ require (
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
+	pault.ag/go/modprobe v0.1.2
 )
 
 require github.com/godbus/dbus/v5 v5.0.4 // indirect
@@ -35,4 +36,5 @@ require (
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	pault.ag/go/topsort v0.0.0-20160530003732-f98d2ad46e1a // indirect
 )

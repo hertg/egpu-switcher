@@ -1,29 +1,38 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
-	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/hertg/egpu-switcher/internal/logger"
 	"github.com/hertg/egpu-switcher/internal/pci"
+	"github.com/hertg/egpu-switcher/internal/service"
 	"github.com/hertg/egpu-switcher/internal/xorg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sys/unix"
+	"pault.ag/go/modprobe"
 )
 
 var removeCommand = &cobra.Command{
-	Use: "remove",
+	Use:   "remove",
+	Short: "[root required][experimental] Remove GPU and restart display manager",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		if !isRoot {
 			return fmt.Errorf("you need root privileges to remove egpu")
+		}
+
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("please note that this is an experimental feature, continue? (y/N): ")
+		answer, _ := reader.ReadString('\n')
+		if answer != "y\n" && answer != "Y\n" {
+			os.Exit(0)
 		}
 
 		ctx := context.Background()
@@ -39,19 +48,15 @@ var removeCommand = &cobra.Command{
 			return fmt.Errorf("the egpu is not connected")
 		}
 
-		systemd, err := dbus.NewSystemdConnectionContext(ctx)
+		init, err := service.GetInitSystem()
 		if err != nil {
-			return fmt.Errorf("unable to connect to dbus")
+			return err
 		}
-		defer systemd.Close()
 
 		err = xorg.RemoveEgpuFile(x11ConfPath, verbose)
 		if err != nil {
 			return err
 		}
-
-		dmServiceName, err := os.Readlink("/etc/systemd/system/display-manager.service")
-		dmServiceName = filepath.Base(dmServiceName)
 
 		go func() {
 			defer func() {
@@ -61,36 +66,30 @@ var removeCommand = &cobra.Command{
 				}
 			}()
 
+			// wait on signal
 			sig := <-sigChan
 			logger.Debug("got signal: %s", sig)
-			dmStatusChange, _ := systemd.SubscribeUnitsCustom(500*time.Millisecond, 0, func(u1, u2 *dbus.UnitStatus) bool { return *u1 != *u2 }, func(s string) bool { return s != dmServiceName })
-			dmInactive := make(chan bool)
-			go func() {
-				for {
-					select {
-					case status := <-dmStatusChange:
-						for _, v := range status {
-							if v.ActiveState != "active" {
-								dmInactive <- true
-								return
-							}
-						}
 
-					}
+			// block until display manager is stopped
+			for {
+				stopped, err := init.IsDisplayManagerStopped(ctx)
+				if err != nil {
+					panic(err)
 				}
-			}()
+				if stopped {
+					break
+				}
+				<-time.After(500 * time.Millisecond)
+			}
 
-			<-dmInactive // block until display manager is inactive
-			logger.Debug("display-manager '%s' has become inactive", dmServiceName)
+			logger.Debug("display-manager has become inactive")
 
 			if driver == "nvidia" {
 				// systemctl stop nvidia-persistenced.service
-				ch := make(chan string)
-				_, err := systemd.StopUnitContext(ctx, "nvidia-persistenced", "replace", ch)
+				err := init.StopUnit(ctx, "nvidia-persistenced")
 				if err != nil {
-					logger.Error("unable to stop nvidia-persistenced: %s", err.Error())
+					panic(err)
 				}
-				// logger.Debug("got result from stopping service: %s", <-ch)
 				modules := []string{"nvidia_uvm", "nvidia_drm", "nvidia_modeset", "nvidia"}
 				for _, mod := range modules {
 					logger.Info("unload kernel module: %s", mod)
@@ -108,22 +107,30 @@ var removeCommand = &cobra.Command{
 				panic(err)
 			}
 
-			// load kernel modules again, if a gpu requiring the driver is still connected
+			// load kernel modules again, if another gpu requires the same driver
 			gpus := pci.ReadGPUs()
 			for _, gpu := range gpus {
 				if *gpu.PciDevice.Driver == driver {
 					// another gpu still requires the now unloaded driver, so reload it here
-					// TODO modprobe ${driver}
-					if driver == "nvidia" {
-						// TODO: modprobe nvidia_drm
+
+					// modprobe ${driver}
+					if err := modprobe.Load(driver, ""); err != nil {
+						panic(err)
 					}
-					// TODO: sleep 1s ?
+					if driver == "nvidia" {
+						// modprobe nvidia_drm
+						if err := modprobe.Load("nvidia_drm", ""); err != nil {
+							panic(err)
+						}
+					}
+					// sleep 1s
+					<-time.After(1 * time.Second)
 					break
 				}
 			}
 
-			logger.Info("starting %s again", dmServiceName)
-			_, err = systemd.StartUnitContext(ctx, dmServiceName, "replace", nil)
+			logger.Info("starting display manager again")
+			err = init.StartDisplayManager(ctx)
 			if err != nil {
 				logger.Error("unable to start display-manager: %s", err)
 			}
@@ -132,7 +139,7 @@ var removeCommand = &cobra.Command{
 		}()
 
 		// systemctl stop display-manager.service
-		_, err = systemd.StopUnitContext(ctx, dmServiceName, "replace", nil)
+		err = init.StopDisplayManager(ctx)
 		if err != nil {
 			logger.Error("unable to stop display-manager: %s", err)
 		}

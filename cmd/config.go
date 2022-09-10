@@ -16,7 +16,7 @@ import (
 
 var configCommand = &cobra.Command{
 	Use:   "config",
-	Short: "Configure egpu-switcher",
+	Short: "[root required] Configure egpu-switcher",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		if !isRoot {
@@ -55,7 +55,6 @@ var configCommand = &cobra.Command{
 		selected := gpus[num-1]
 		driver := selected.PciDevice.Driver
 		if driver == nil {
-			// logger.Info(err.Error())
 			fmt.Printf("Please manually enter the driver to be used: ")
 			answer, _ = reader.ReadString('\n')
 			d := strings.TrimSuffix(answer, "\n")
