@@ -44,6 +44,8 @@ var switchCommand = &cobra.Command{
 		if id == 0 {
 			return fmt.Errorf("egpu-switcher has not been configured, we don't know what gpu to look out for...")
 		}
+
+		// TODO: give the eGPU time to connect
 		gpu := pci.Find(uint64(id))
 
 		switch arg {
