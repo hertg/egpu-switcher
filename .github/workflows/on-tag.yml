@@ -11,25 +11,25 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: create sample script
-        run: |
-          mkdir -p .debpkg/usr/bin
-          mkdir -p .debpkg/usr/lib/samplescript
-          echo -e "echo sample" > .debpkg/usr/bin/samplescript
-          chmod +x .debpkg/usr/bin/samplescript
-          echo -e "a=1" > .debpkg/usr/lib/samplescript/samplescript.conf
+      # - name: create sample script
+      #   run: |
+      #     mkdir -p .debpkg/usr/bin
+      #     mkdir -p .debpkg/usr/lib/samplescript
+      #     echo -e "echo sample" > .debpkg/usr/bin/samplescript
+      #     chmod +x .debpkg/usr/bin/samplescript
+      #     echo -e "a=1" > .debpkg/usr/lib/samplescript/samplescript.conf
 
-          # create DEBIAN directory if you want to add other pre/post scripts
-          mkdir -p .debpkg/DEBIAN
-          echo -e "echo postinst" > .debpkg/DEBIAN/postinst
-          chmod +x .debpkg/DEBIAN/postinst
+      #     # create DEBIAN directory if you want to add other pre/post scripts
+      #     mkdir -p .debpkg/DEBIAN
+      #     echo -e "echo postinst" > .debpkg/DEBIAN/postinst
+      #     chmod +x .debpkg/DEBIAN/postinst
 
-      - uses: jiro4989/build-deb-action@v2
-        with:
-          package: samplescript
-          package_root: .debpkg
-          maintainer: your_name
-          version: ${{ github.ref }} # refs/tags/v*.*.*
-          arch: 'amd64'
-          depends: 'libc6 (>= 2.2.1), git'
-          desc: 'this is sample package.'
+      # - uses: jiro4989/build-deb-action@v2
+      #   with:
+      #     package: samplescript
+      #     package_root: .debpkg
+      #     maintainer: your_name
+      #     version: ${{ github.ref }} # refs/tags/v*.*.*
+      #     arch: 'amd64'
+      #     depends: 'libc6 (>= 2.2.1), git'
+      #     desc: 'this is sample package.'
