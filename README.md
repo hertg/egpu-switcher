@@ -1,3 +1,7 @@
+> **Note**: The main branch is now tracking a completely new version of egpu-switcher
+> that hasn't been fully released yet. To get the `README` of the most recent release
+> head over to [the `legacy` branch](https://github.com/hertg/egpu-switcher/tree/legacy).
+
 <div align="center">
   <h1><strong>egpu-switcher</strong></h1>
   <p>
