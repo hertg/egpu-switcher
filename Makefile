@@ -14,7 +14,7 @@ build:
 		-ldflags "-X github.com/hertg/egpu-switcher/internal/buildinfo.Version=$(shell git describe --tags) -X github.com/hertg/egpu-switcher/internal/buildinfo.BuildTime=$(shell date -u +%Y%m%d.%H%M%S)" \
 		-o ${OUT_BIN}
 	@echo "binary compiled => ${OUT_BIN}"
-	${OUT_BIN} gendocs -o ${DOCS_DIR}
+	go run . gendocs -o ${DOCS_DIR}
 	@echo "docs generated => ${DOCS_DIR}"
 
 clean:
