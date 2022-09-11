@@ -1,3 +1,5 @@
+# https://wiki.archlinux.org/title/Go_package_guidelines
+#
 BINDIR := /usr/bin
 SHAREDIR := /usr/share
 MANDIR := /usr/share/man/man1
@@ -7,11 +9,21 @@ OUT_DIR := ./bin
 BINARY_NAME ?= egpu-switcher
 OUT_BIN := ${OUT_DIR}/${BINARY_NAME}
 
+VERSION := $(shell git describe --tags)
+DATE := $(shell date -u +%Y%m%d.%H%M%S)
+ORIGIN ?= make
+
+GOFLAGS := -buildmode=pie \
+					 -trimpath \
+					 -mod=readonly \
+					 -modcacherw \
+					 -ldflags "-X github.com/hertg/egpu-switcher/internal/buildinfo.Version=${VERSION} -X github.com/hertg/egpu-switcher/internal/buildinfo.BuildTime=${DATE} -X github.com/hertg/egpu-switcher/internal/buildinfo.Origin=${ORIGIN} -linkmode external -extldflags \"${LDFLAGS}\""
+
 all: build
 
 build:
 	go build \
-		-ldflags "-X github.com/hertg/egpu-switcher/internal/buildinfo.Version=$(shell git describe --tags) -X github.com/hertg/egpu-switcher/internal/buildinfo.BuildTime=$(shell date -u +%Y%m%d.%H%M%S)" \
+		${GOFLAGS} \
 		-o ${OUT_BIN}
 	@echo "binary compiled => ${OUT_BIN}"
 	go run . gendocs -o ${DOCS_DIR}
