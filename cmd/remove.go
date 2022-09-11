@@ -110,8 +110,10 @@ var removeCommand = &cobra.Command{
 
 			// load kernel modules again, if another gpu requires the same driver
 			gpus := pci.ReadGPUs()
+			fmt.Printf("%+v\n", gpus)
 			for _, gpu := range gpus {
 				if gpu == nil || gpu.PciDevice == nil || gpu.PciDevice.Driver == nil {
+					logger.Debug("can't get driver for gpu %+v", gpu)
 					continue
 				}
 				if *gpu.PciDevice.Driver == driver {
@@ -147,7 +149,11 @@ var removeCommand = &cobra.Command{
 
 		select {
 		case err := <-errChan:
-			logger.Error("got error: %s", err)
+			if err != nil {
+				logger.Error("got error: %s", err)
+			} else {
+				logger.Success("removal was finished")
+			}
 			return err
 		case <-time.After(10 * time.Second):
 			return fmt.Errorf("exiting due to timeout")
