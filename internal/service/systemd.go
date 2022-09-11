@@ -22,7 +22,7 @@ type Systemd struct {
 	once     sync.Once
 }
 
-func (s Systemd) conn(ctx context.Context) *dbus.Conn {
+func (s *Systemd) conn(ctx context.Context) *dbus.Conn {
 	var err error
 	s.once.Do(func() {
 		s.dbusConn, err = dbus.NewSystemdConnectionContext(ctx)
@@ -33,7 +33,7 @@ func (s Systemd) conn(ctx context.Context) *dbus.Conn {
 	return s.dbusConn
 }
 
-func (s Systemd) displayManagerName() (string, error) {
+func (s *Systemd) displayManagerName() (string, error) {
 	dmServiceName, err := os.Readlink("/etc/systemd/system/display-manager.service")
 	if err != nil {
 		return "", err
