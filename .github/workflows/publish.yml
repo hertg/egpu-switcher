@@ -47,5 +47,3 @@ jobs:
           draft: false
           files: bin/${{env.BINARY_NAME}}
           prerelease: ${{ contains(github.ref, '-rc.') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
