@@ -179,19 +179,24 @@ func modInit(path, params string, flags int) error {
 	}
 	defer f.Close()
 
-	reader := f
+	var b []byte
 	if strings.HasSuffix(f.Name(), ".xz") {
-		reader, err = xz.NewReader(f)
+		reader, err := xz.NewReader(f)
+		if err != nil {
+			return err
+		}
+		b, err = ioutil.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+	} else {
+		b, err = ioutil.ReadAll(f)
 		if err != nil {
 			return err
 		}
 	}
 
-	buf, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return err
-	}
-	return unix.InitModule(buf, params)
+	return unix.InitModule(b, params)
 }
 
 func loadMod(k *kmod.Kmod, name string) error {
