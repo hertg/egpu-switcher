@@ -111,6 +111,9 @@ var removeCommand = &cobra.Command{
 			// load kernel modules again, if another gpu requires the same driver
 			gpus := pci.ReadGPUs()
 			for _, gpu := range gpus {
+				if gpu == nil || gpu.PciDevice == nil || gpu.PciDevice.Driver == nil {
+					continue
+				}
 				if *gpu.PciDevice.Driver == driver {
 					logger.Debug("the GPU '%s' still requires kernel module %s", gpu.DisplayName(), driver)
 					if err := loadMod(k, driver); err != nil {
