@@ -1,0 +1,50 @@
+name: Publish
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  release:
+    strategy:
+      matrix:
+        go: [ '1.19' ]
+        goosarch:
+          - linux/amd64
+          - linux/arm64
+    env:
+      FILENAME: egpu-switcher
+    runs-on: ubuntu-latest
+    name: Build and Publish Binaries (Go ${{ matrix.go }} / Arch ${{ matrix.goosarch }})
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      # the following steps only run on tags
+      # credits: https://stackoverflow.com/a/66959862
+      - name: Get OS and arch info
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          GOOSARCH=${{matrix.goosarch}}
+          GOARCH=${GOOSARCH#*/}
+          BINARY_NAME=${{env.FILENAME}}-$GOARCH
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+          echo "GOARCH=$GOARCH" >> $GITHUB_ENV
+
+      - name: Run build
+        if: startsWith(github.ref, 'refs/tags/')
+        run: make build
+
+      - name: Create Github Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          draft: false
+          files: ${{env.BINARY_NAME}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

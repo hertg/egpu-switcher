@@ -1,5 +1,0 @@
-#!/bin/sh
-
-# clean up files egpu-switcher has created
-# and possibly restored backed up files
-egpu-switcher cleanup
