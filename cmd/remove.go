@@ -86,6 +86,23 @@ var removeCommand = &cobra.Command{
 
 			logger.Debug("display-manager has become inactive")
 
+			// check if same module still required after removal
+			// this needs to be done before unloading, otherwise
+			// we can't get the information from sysfs which pci
+			// devices also use the same module
+			gpus := pci.ReadGPUs()
+			driverUsed := 0
+			for _, gpu := range gpus {
+				if *gpu.PciDevice.Driver == driver {
+					driverUsed += 1
+					if driverUsed > 1 {
+						break
+					}
+				}
+			}
+			loadModAgain := driverUsed > 1
+
+			// unload module
 			if driver == "nvidia" {
 				// systemctl stop nvidia-persistenced.service
 				err := init.StopUnit(ctx, "nvidia-persistenced.service")
@@ -109,27 +126,16 @@ var removeCommand = &cobra.Command{
 			logger.Info("pci device was removed")
 
 			// load kernel modules again, if another gpu requires the same driver
-			gpus := pci.ReadGPUs()
-			fmt.Printf("%+v\n", gpus)
-			for _, gpu := range gpus {
-				if gpu == nil || gpu.PciDevice == nil || gpu.PciDevice.Driver == nil {
-					logger.Debug("can't get driver for gpu %+v", gpu)
-					continue
+			if loadModAgain {
+				if err := loadMod(k, driver); err != nil {
+					errChan <- err
 				}
-				if *gpu.PciDevice.Driver == driver {
-					logger.Debug("the GPU '%s' still requires kernel module %s", gpu.DisplayName(), driver)
-					if err := loadMod(k, driver); err != nil {
+				if driver == "nvidia" {
+					if err := loadMod(k, "nvidia_drm"); err != nil {
 						errChan <- err
 					}
-					if driver == "nvidia" {
-						if err := loadMod(k, "nvidia_drm"); err != nil {
-							errChan <- err
-						}
-					}
-					// sleep 1s
-					<-time.After(1 * time.Second)
-					break
 				}
+				<-time.After(1 * time.Second)
 			}
 
 			logger.Info("starting display manager again")
