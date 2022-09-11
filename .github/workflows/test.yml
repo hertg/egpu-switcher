@@ -12,6 +12,9 @@ jobs:
     strategy:
       matrix:
         go: [ '1.19' ]
+        goosarch:
+          - linux/amd64
+          - linux/arm64
     name: Run tests and linters (Go ${{ matrix.go }})
     steps:
 

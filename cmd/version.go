@@ -14,6 +14,11 @@ var versionCmd = &cobra.Command{
 	Short: "Print version information",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
+		version := buildinfo.Version
+		if version == "" {
+			version = "unknown"
+		}
+
 		if full {
 			buildtime := buildinfo.BuildTime
 			if buildtime == "" {
@@ -23,11 +28,11 @@ var versionCmd = &cobra.Command{
 			if origin == "" {
 				origin = "unknown"
 			}
-			fmt.Printf("%s_%s_%s\n", buildinfo.Version, buildtime, origin)
+			fmt.Printf("%s_%s_%s\n", version, buildtime, origin)
 			return nil
 		}
 
-		fmt.Println(buildinfo.Version)
+		fmt.Println(version)
 		return nil
 	},
 }
