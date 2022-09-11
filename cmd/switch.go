@@ -42,7 +42,18 @@ var switchCommand = &cobra.Command{
 
 		id := viper.GetInt("egpu.id")
 		if id == 0 {
-			return fmt.Errorf("egpu-switcher has not been configured, we don't know what gpu to look out for...")
+			logger.Error("it seems that there is no configuration present, we don't know what gpu to look out for...")
+
+			oldPath := "/etc/egpu-switcher/egpu-switcher.conf"
+			_, err := os.Stat(oldPath)
+			if err == nil {
+				logger.Info("there seems to be an old configuration present at %s", oldPath)
+				logger.Info("this config format is no longer valid and can not be automatically migrated")
+			}
+
+			logger.Info("please connect your eGPU and run 'egpu-switcher config' to resolve this issue")
+
+			return fmt.Errorf("no configuration found")
 		}
 
 		// TODO: give the eGPU time to connect
