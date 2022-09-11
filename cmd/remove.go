@@ -16,7 +16,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sys/unix"
-	"pault.ag/go/modprobe"
 )
 
 var removeCommand = &cobra.Command{
@@ -39,7 +38,6 @@ var removeCommand = &cobra.Command{
 
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-		done := make(chan bool, 1)
 
 		id := uint64(viper.GetInt("egpu.id"))
 		driver := viper.GetString("egpu.driver")
@@ -58,11 +56,14 @@ var removeCommand = &cobra.Command{
 			return err
 		}
 
+		errChan := make(chan error)
+
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					logger.Error("goroutine panicked: %+v", r)
-					done <- true
+					errChan <- fmt.Errorf("goroutine panicked: %+v", r)
+					// logger.Error("goroutine panicked: %+v", r)
+					// done <- true
 				}
 			}()
 
@@ -74,7 +75,7 @@ var removeCommand = &cobra.Command{
 			for {
 				stopped, err := init.IsDisplayManagerStopped(ctx)
 				if err != nil {
-					panic(err)
+					errChan <- err
 				}
 				if stopped {
 					break
@@ -86,9 +87,9 @@ var removeCommand = &cobra.Command{
 
 			if driver == "nvidia" {
 				// systemctl stop nvidia-persistenced.service
-				err := init.StopUnit(ctx, "nvidia-persistenced")
+				err := init.StopUnit(ctx, "nvidia-persistenced.service")
 				if err != nil {
-					panic(err)
+					errChan <- err
 				}
 				modules := []string{"nvidia_uvm", "nvidia_drm", "nvidia_modeset", "nvidia"}
 				for _, mod := range modules {
@@ -104,8 +105,9 @@ var removeCommand = &cobra.Command{
 			err = gpu.PciDevice.Remove()
 			if err != nil {
 				logger.Error("unable to remove pci device: %s", err)
-				panic(err)
+				errChan <- err
 			}
+			logger.Info("pci device was removed")
 
 			// load kernel modules again, if another gpu requires the same driver
 			gpus := pci.ReadGPUs()
@@ -114,14 +116,14 @@ var removeCommand = &cobra.Command{
 					// another gpu still requires the now unloaded driver, so reload it here
 
 					// modprobe ${driver}
-					if err := modprobe.Load(driver, ""); err != nil {
-						panic(err)
-					}
+					// if err := modprobe.Load(driver, ""); err != nil {
+					// 	errChan <- err
+					// }
 					if driver == "nvidia" {
 						// modprobe nvidia_drm
-						if err := modprobe.Load("nvidia_drm", ""); err != nil {
-							panic(err)
-						}
+						// if err := modprobe.Load("nvidia_drm", ""); err != nil {
+						// 	errChan <- err
+						// }
 					}
 					// sleep 1s
 					<-time.After(1 * time.Second)
@@ -135,7 +137,7 @@ var removeCommand = &cobra.Command{
 				logger.Error("unable to start display-manager: %s", err)
 			}
 
-			done <- true
+			errChan <- nil
 		}()
 
 		// systemctl stop display-manager.service
@@ -144,8 +146,7 @@ var removeCommand = &cobra.Command{
 			logger.Error("unable to stop display-manager: %s", err)
 		}
 
-		<-done
-		return nil
+		return <-errChan
 	},
 }
 
