@@ -39,6 +39,7 @@ install:
 	@echo "manpages installed in ${DESTDIR}${MANDIR}"
 
 uninstall:
+	egpu-switcher disable || echo "NOTE: unable to run 'egpu-switcher disable', maybe the egpu.service is still left on your system"
 	rm -f ${DESTDIR}${BINDIR}/egpu-switcher
 	@echo "removed binary at ${DESTDIR}${BINDIR}/egpu-switcher"
 	rm -f ${DESTDIR}${MANDIR}/egpu-switcher*.1.gz
