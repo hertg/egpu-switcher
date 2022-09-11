@@ -18,17 +18,23 @@
 > head over to [the `legacy` branch](https://github.com/hertg/egpu-switcher/tree/legacy).
 
 ## Description
-The goal of this CLI is to lower the barrier for Linux users to use their eGPU on the Linux Desktop.
-With the `egpu-switcher config` command the user can choose their external GPU. On every bootup the service will check if the eGPU is connected and if so, make X.Org prefer it.
+
+The goal of this CLI is to lower the barrier for Linux users to
+use their eGPU on the Linux Desktop. With the `egpu-switcher config`
+command the user can choose their external GPU.
+On every bootup the service will check if the eGPU is connected
+and if so, make X.Org prefer it.
 
 ---
 
 ## Limitations
+
 - No hotplugging is possible. Users still need to reboot their computer to connect / disconnect the eGPU.
 
 ---
 
 ## Requirements
+
 - Running X.Org
 - Thunderbolt connection to eGPU is authorized
 - Necessary graphics drivers for eGPU are installed
@@ -38,33 +44,60 @@ With the `egpu-switcher config` command the user can choose their external GPU. 
 ## Installation
 
 ### Ubuntu (apt)
+
 *TODO*
 
 ### Arch (aur)
+
 *TODO*
 
 ### Manual
+
 Installation and setup:
+
 ```bash
-$ git clone git@github.com:hertg/egpu-switcher.git
-$ cd egpu-switcher
-$ make build -s
-$ sudo make install -s
-$ sudo egpu-switcher enable
+git clone git@github.com:hertg/egpu-switcher.git
+cd egpu-switcher
+make build -s
+sudo make install -s
+sudo egpu-switcher enable
 ```
 
 Uninstall:
+
 ```bash
-$ sudo egpu-switcher disable
-$ sudo make uninstall -s
+sudo egpu-switcher disable
+sudo make uninstall -s
 ```
 
 ---
 
 ## Commands
-*TODO*
+
+```txt
+Usage:
+  egpu-switcher [command]
+
+Available Commands:
+  config      Choose your external GPU
+  disable     Disable egpu-switcher from running at startup
+  enable      Enable egpu-switcher to run at startup
+  help        Help about any command
+  switch      Check if eGPU is present and configure X.org accordingly
+
+Flags:
+  -h, --help      help for egpu-switcher
+  -v, --verbose   verbose output
+
+Use "egpu-switcher [command] --help" for more information about a command.
+
+
+```
 
 ---
 
 ## Troubleshooting
-If you run into problems, please have a look at [TROUBLESHOOT.md](https://github.com/hertg/egpu-switcher/blob/master/TROUBLESHOOT.md) before reporting any issues.
+
+If you run into problems, please have a look at
+[TROUBLESHOOT.md](https://github.com/hertg/egpu-switcher/blob/master/TROUBLESHOOT.md)
+before reporting any issues.
