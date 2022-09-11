@@ -16,7 +16,7 @@ import (
 
 var configCommand = &cobra.Command{
 	Use:   "config",
-	Short: "[root required] Configure egpu-switcher",
+	Short: "Choose your external GPU",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		if !isRoot {

@@ -23,8 +23,9 @@ import (
 )
 
 var removeCommand = &cobra.Command{
-	Use:   "remove",
-	Short: "[root required][experimental] Remove GPU and restart display manager",
+	Use:    "remove",
+	Short:  "Remove GPU and restart display manager [experimental]",
+	Hidden: true, // TODO
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		if !isRoot {

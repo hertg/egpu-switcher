@@ -19,7 +19,7 @@ var override bool
 
 var switchCommand = &cobra.Command{
 	Use:   "switch [auto|internal|egpu]",
-	Short: "todo",
+	Short: "Check if eGPU is present and configure X.org accordingly",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		if !isRoot {
@@ -51,7 +51,8 @@ var switchCommand = &cobra.Command{
 		switch arg {
 		case "internal":
 			return switchInternal()
-		case "egpu":
+		case "egpu", "external":
+			// note: the 'external' is still valid for backwards compatibility
 			if gpu == nil {
 				return fmt.Errorf("the eGPU is not connected, unable to switch")
 			}

@@ -48,14 +48,15 @@ Installation and setup:
 ```bash
 $ git clone git@github.com:hertg/egpu-switcher.git
 $ cd egpu-switcher
-$ make install
-$ sudo egpu-switcher setup
+$ make build -s
+$ sudo make install -s
+$ sudo egpu-switcher enable
 ```
 
 Uninstall:
 ```bash
-$ sudo egpu-switcher cleanup
-$ make uninstall
+$ sudo egpu-switcher disable
+$ sudo make uninstall -s
 ```
 
 ---

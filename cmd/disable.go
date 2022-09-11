@@ -11,9 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cleanupCommand = &cobra.Command{
-	Use:   "cleanup",
-	Short: "[root required] Remove any non-configuration files egpu-switcher might have created",
+var disableCommand = &cobra.Command{
+	Use:     "disable",
+	Aliases: []string{"cleanup"}, // backwards compatibility
+	Short:   "Disable egpu-switcher from running at startup",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		if !isRoot {
@@ -53,6 +54,6 @@ var cleanupCommand = &cobra.Command{
 var hard bool
 
 func init() {
-	rootCmd.AddCommand(cleanupCommand)
-	cleanupCommand.PersistentFlags().BoolVar(&hard, "hard", false, "remove configuration files too")
+	rootCmd.AddCommand(disableCommand)
+	disableCommand.PersistentFlags().BoolVar(&hard, "hard", false, "remove configuration files too")
 }
