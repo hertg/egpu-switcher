@@ -26,8 +26,6 @@ build:
 		-ldflags "-X github.com/hertg/egpu-switcher/internal/buildinfo.Version=${VERSION} -X github.com/hertg/egpu-switcher/internal/buildinfo.BuildTime=${DATE} -X github.com/hertg/egpu-switcher/internal/buildinfo.Origin=${ORIGIN}" \
 		-o ${OUT_BIN}
 	@echo "binary compiled => ${OUT_BIN}"
-	go run . gendocs -o ${DOCS_DIR}
-	@echo "docs generated => ${DOCS_DIR}"
 
 clean:
 	rm -f ${OUT_BIN}
@@ -49,6 +47,8 @@ install:
 	mkdir -p ${DESTDIR}${BINDIR}
 	cp ${OUT_BIN} ${DESTDIR}${BINDIR}/
 	@echo "binary installed at ${DESTDIR}${BINDIR}/${BINARY_NAME}"
+	${OUT_BIN} gendocs -o ${DOCS_DIR}
+	@echo "docs generated => ${DOCS_DIR}"
 	mkdir -p ${DESTDIR}${MANDIR}
 	cp docs/man/egpu-switcher*.1 ${DESTDIR}${MANDIR}/
 	rm -f ${DESTDIR}${MANDIR}/egpu-switcher*.1.gz
