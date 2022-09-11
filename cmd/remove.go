@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,9 +13,11 @@ import (
 	"github.com/hertg/egpu-switcher/internal/pci"
 	"github.com/hertg/egpu-switcher/internal/service"
 	"github.com/hertg/egpu-switcher/internal/xorg"
+	"github.com/pmorjan/kmod"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"pault.ag/go/modprobe"
+	"github.com/ulikunitz/xz"
+	"golang.org/x/sys/unix"
 )
 
 var removeCommand = &cobra.Command{
@@ -56,6 +59,7 @@ var removeCommand = &cobra.Command{
 		}
 
 		errChan := make(chan error)
+		k, err := kmod.New(kmod.SetInitFunc(modInit))
 		if err != nil {
 			return err
 		}
@@ -110,7 +114,7 @@ var removeCommand = &cobra.Command{
 				}
 				modules := []string{"nvidia_uvm", "nvidia_drm", "nvidia_modeset", "nvidia"}
 				for _, mod := range modules {
-					if err := unloadMod(mod); err != nil {
+					if err := unloadMod(k, mod); err != nil {
 						panic(err)
 					}
 				}
@@ -126,11 +130,11 @@ var removeCommand = &cobra.Command{
 
 			// load kernel modules again, if another gpu requires the same driver
 			if loadModAgain {
-				if err := loadMod(driver); err != nil {
+				if err := loadMod(k, driver); err != nil {
 					errChan <- err
 				}
 				if driver == "nvidia" {
-					if err := loadMod("nvidia_drm"); err != nil {
+					if err := loadMod(k, "nvidia_drm"); err != nil {
 						errChan <- err
 					}
 				}
@@ -166,9 +170,26 @@ var removeCommand = &cobra.Command{
 	},
 }
 
-func loadMod(name string) error {
+func modInit(path, params string, flags int) error {
+	logger.Debug("try to init module at %s", path)
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	rd, err := xz.NewReader(f)
+	if err != nil {
+		return err
+	}
+	buf, err := ioutil.ReadAll(rd)
+	if err != nil {
+		return err
+	}
+	return unix.InitModule(buf, params)
+}
+
+func loadMod(k *kmod.Kmod, name string) error {
 	logger.Debug("attempting to load module '%s'...", name)
-	if err := modprobe.Load(name, ""); err != nil {
+	if err := k.Load(name, "", 0); err != nil {
 		logger.Error("loading module '%s' failed: %s", name, err)
 		return err
 	}
@@ -176,9 +197,9 @@ func loadMod(name string) error {
 	return nil
 }
 
-func unloadMod(name string) error {
+func unloadMod(k *kmod.Kmod, name string) error {
 	logger.Debug("attempting to unload module '%s'...", name)
-	if err := modprobe.Remove(name); err != nil {
+	if err := k.Unload(name); err != nil {
 		logger.Error("unloading module '%s' failed: %s", name, err)
 		return err
 	}
