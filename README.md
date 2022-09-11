@@ -84,6 +84,7 @@ Available Commands:
   enable      Enable egpu-switcher to run at startup
   help        Help about any command
   switch      Check if eGPU is present and configure X.org accordingly
+  version     Print version information
 
 Flags:
   -h, --help      help for egpu-switcher

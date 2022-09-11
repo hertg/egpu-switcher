@@ -1,35 +1,50 @@
-name: on tag
-
+name: Publish
 on:
   push:
     tags:
-      - v*
-
+      - 'v*'
 jobs:
-  build:
+  release:
+    strategy:
+      matrix:
+        go: [ '1.19' ]
+        goosarch:
+          - linux/amd64
+          - linux/arm64
+    # env:
+    #   FILENAME: egpu-switcher
     runs-on: ubuntu-latest
+    name: Build and Publish Binaries (Go ${{ matrix.go }} / Arch ${{ matrix.goosarch }})
     steps:
-      - uses: actions/checkout@v2
 
-      # - name: create sample script
-      #   run: |
-      #     mkdir -p .debpkg/usr/bin
-      #     mkdir -p .debpkg/usr/lib/samplescript
-      #     echo -e "echo sample" > .debpkg/usr/bin/samplescript
-      #     chmod +x .debpkg/usr/bin/samplescript
-      #     echo -e "a=1" > .debpkg/usr/lib/samplescript/samplescript.conf
+      - name: Checkout
+        uses: actions/checkout@v2
 
-      #     # create DEBIAN directory if you want to add other pre/post scripts
-      #     mkdir -p .debpkg/DEBIAN
-      #     echo -e "echo postinst" > .debpkg/DEBIAN/postinst
-      #     chmod +x .debpkg/DEBIAN/postinst
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
 
-      # - uses: jiro4989/build-deb-action@v2
-      #   with:
-      #     package: samplescript
-      #     package_root: .debpkg
-      #     maintainer: your_name
-      #     version: ${{ github.ref }} # refs/tags/v*.*.*
-      #     arch: 'amd64'
-      #     depends: 'libc6 (>= 2.2.1), git'
-      #     desc: 'this is sample package.'
+      # the following steps only run on tags
+      # credits: https://stackoverflow.com/a/66959862
+      - name: Get OS and arch info
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          GOOSARCH=${{matrix.goosarch}}
+          GOARCH=${GOOSARCH#*/}
+          BINARY_NAME=${{env.FILENAME}}-$GOARCH
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+          echo "GOARCH=$GOARCH" >> $GITHUB_ENV
+
+      - name: Run build
+        if: startsWith(github.ref, 'refs/tags/')
+        run: make build
+
+      - name: Create Github Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          draft: false
+          files: ${{env.BINARY_NAME}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

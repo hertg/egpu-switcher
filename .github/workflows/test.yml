@@ -1,0 +1,30 @@
+name: Lint / Test
+on:
+  pull_request:
+  push:
+    branches:
+      - '*'
+    tags-ignore:
+      - '*'
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ '1.19' ]
+    name: Run tests and linters (Go ${{ matrix.go }})
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Run linters
+        run: make lint
+
+      - name: Run tests
+        run: make test

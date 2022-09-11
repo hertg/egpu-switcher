@@ -4,13 +4,15 @@ MANDIR := /usr/share/man/man1
 
 DOCS_DIR := ./docs
 OUT_DIR := ./bin
-BINARY_NAME := egpu-switcher
+BINARY_NAME ?= egpu-switcher
 OUT_BIN := ${OUT_DIR}/${BINARY_NAME}
 
 all: build
 
 build:
-	go build -o ${OUT_BIN}
+	go build \
+		-ldflags "-X github.com/hertg/egpu-switcher/internal/buildinfo.Version=$(shell git describe --tags) -X github.com/hertg/egpu-switcher/internal/buildinfo.BuildTime=$(shell date -u +%Y%m%d.%H%M%S)" \
+		-o ${OUT_BIN}
 	@echo "binary compiled => ${OUT_BIN}"
 	${OUT_BIN} gendocs -o ${DOCS_DIR}
 	@echo "docs generated => ${DOCS_DIR}"
@@ -23,6 +25,9 @@ clean:
 
 test:
 	go test ./...
+
+lint:
+	go vet ./...
 
 install:
 	@if [ ! -f ${OUT_BIN} ]; then\
