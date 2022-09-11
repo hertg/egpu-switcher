@@ -1,4 +1,4 @@
-name: Test
+name: CI
 on:
   pull_request:
   push:
@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         go: [ '1.19' ]
-    name: Run (Go ${{ matrix.go }})
+    name: Test (Go ${{ matrix.go }})
     steps:
 
       - name: Checkout
@@ -38,7 +38,7 @@ jobs:
         goosarch:
           - linux/amd64
           - linux/arm64
-    name: Run (Go ${{ matrix.go }}) (${{ matrix.goosarch }})
+    name: Build (Go ${{ matrix.go }} / Arch ${{ matrix.goosarch }})
     steps:
 
       - name: Checkout
@@ -49,5 +49,5 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
-      - name: Run linters
+      - name: Run build
         run: make build
