@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -27,12 +26,12 @@ var removeCommand = &cobra.Command{
 			return fmt.Errorf("you need root privileges to remove egpu")
 		}
 
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("please note that this is an experimental feature, continue? (y/N): ")
-		answer, _ := reader.ReadString('\n')
-		if answer != "y\n" && answer != "Y\n" {
-			os.Exit(0)
-		}
+		// reader := bufio.NewReader(os.Stdin)
+		// fmt.Print("please note that this is an experimental feature, continue? (y/N): ")
+		// answer, _ := reader.ReadString('\n')
+		// if answer != "y\n" && answer != "Y\n" {
+		// 	os.Exit(0)
+		// }
 
 		ctx := context.Background()
 
@@ -95,11 +94,8 @@ var removeCommand = &cobra.Command{
 				}
 				modules := []string{"nvidia_uvm", "nvidia_drm", "nvidia_modeset", "nvidia"}
 				for _, mod := range modules {
-					logger.Info("unload kernel module: %s", mod)
-					err = k.Unload(mod)
-					// err = unix.DeleteModule(mod, 0)
-					if err != nil {
-						logger.Error("unable to unload '%s' kernel module: %s", mod, err)
+					if err := unloadMod(k, mod); err != nil {
+						panic(err)
 					}
 				}
 			}
@@ -116,19 +112,14 @@ var removeCommand = &cobra.Command{
 			gpus := pci.ReadGPUs()
 			for _, gpu := range gpus {
 				if *gpu.PciDevice.Driver == driver {
-					// another gpu still requires the now unloaded driver, so reload it here
-					if err := k.Load(driver, "", 0); err != nil {
+					logger.Debug("the GPU '%s' still requires kernel module %s", gpu.DisplayName(), driver)
+					if err := loadMod(k, driver); err != nil {
 						errChan <- err
 					}
-					// modprobe ${driver}
-					// if err := modprobe.Load(driver, ""); err != nil {
-					// 	errChan <- err
-					// }
 					if driver == "nvidia" {
-						// modprobe nvidia_drm
-						// if err := modprobe.Load("nvidia_drm", ""); err != nil {
-						// 	errChan <- err
-						// }
+						if err := loadMod(k, "nvidia_drm"); err != nil {
+							errChan <- err
+						}
 					}
 					// sleep 1s
 					<-time.After(1 * time.Second)
@@ -151,8 +142,34 @@ var removeCommand = &cobra.Command{
 			logger.Error("unable to stop display-manager: %s", err)
 		}
 
-		return <-errChan
+		select {
+		case err := <-errChan:
+			logger.Error("got error: %s", err)
+			return err
+		case <-time.After(10 * time.Second):
+			return fmt.Errorf("exiting due to timeout")
+		}
 	},
+}
+
+func loadMod(k *kmod.Kmod, name string) error {
+	logger.Debug("attempting to load module '%s'...", name)
+	if err := k.Load(name, "", 0); err != nil {
+		logger.Error("loading module '%s' failed: %s", name, err)
+		return err
+	}
+	logger.Debug("loading module '%s' successful", name)
+	return nil
+}
+
+func unloadMod(k *kmod.Kmod, name string) error {
+	logger.Debug("attempting to unload module '%s'...", name)
+	if err := k.Unload(name); err != nil {
+		logger.Error("unloading module '%s' failed: %s", name, err)
+		return err
+	}
+	logger.Debug("unloading module '%s' successful", name)
+	return nil
 }
 
 func init() {
