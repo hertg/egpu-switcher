@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -176,11 +177,17 @@ func modInit(path, params string, flags int) error {
 	if err != nil {
 		return err
 	}
-	rd, err := xz.NewReader(f)
-	if err != nil {
-		return err
+	defer f.Close()
+
+	reader := f
+	if strings.HasSuffix(f.Name(), ".xz") {
+		reader, err = xz.NewReader(f)
+		if err != nil {
+			return err
+		}
 	}
-	buf, err := ioutil.ReadAll(rd)
+
+	buf, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return err
 	}
