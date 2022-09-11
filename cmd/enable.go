@@ -30,7 +30,6 @@ var setupCommand = &cobra.Command{
 
 		// todo: trigger config if no config exists (unless --no-prompt is used)
 		egpuId := viper.GetInt("egpu.id")
-		fmt.Println(egpuId)
 		if egpuId == 0 {
 			logger.Info("no eGPU has been configured yet")
 			if noPrompt {
