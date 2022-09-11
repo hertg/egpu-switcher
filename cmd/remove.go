@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -201,7 +202,9 @@ func modInit(path, params string, flags int) error {
 
 func loadMod(k *kmod.Kmod, name string) error {
 	logger.Debug("attempting to load module '%s'...", name)
-	if err := k.Load(name, "", 0); err != nil {
+	// if err := k.Load(name, "", 0); err != nil {
+	cmd := exec.Command("modprobe", name)
+	if err := cmd.Run(); err != nil {
 		logger.Error("loading module '%s' failed: %s", name, err)
 		return err
 	}
@@ -211,7 +214,9 @@ func loadMod(k *kmod.Kmod, name string) error {
 
 func unloadMod(k *kmod.Kmod, name string) error {
 	logger.Debug("attempting to unload module '%s'...", name)
-	if err := k.Unload(name); err != nil {
+	// if err := k.Unload(name); err != nil {
+	cmd := exec.Command("modprobe", "-r", name)
+	if err := cmd.Run(); err != nil {
 		logger.Error("unloading module '%s' failed: %s", name, err)
 		return err
 	}
