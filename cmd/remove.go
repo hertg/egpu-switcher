@@ -13,9 +13,9 @@ import (
 	"github.com/hertg/egpu-switcher/internal/pci"
 	"github.com/hertg/egpu-switcher/internal/service"
 	"github.com/hertg/egpu-switcher/internal/xorg"
+	"github.com/pmorjan/kmod"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/sys/unix"
 )
 
 var removeCommand = &cobra.Command{
@@ -57,13 +57,15 @@ var removeCommand = &cobra.Command{
 		}
 
 		errChan := make(chan error)
+		k, err := kmod.New()
+		if err != nil {
+			return err
+		}
 
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
 					errChan <- fmt.Errorf("goroutine panicked: %+v", r)
-					// logger.Error("goroutine panicked: %+v", r)
-					// done <- true
 				}
 			}()
 
@@ -94,7 +96,8 @@ var removeCommand = &cobra.Command{
 				modules := []string{"nvidia_uvm", "nvidia_drm", "nvidia_modeset", "nvidia"}
 				for _, mod := range modules {
 					logger.Info("unload kernel module: %s", mod)
-					err = unix.DeleteModule(mod, 0)
+					err = k.Unload(mod)
+					// err = unix.DeleteModule(mod, 0)
 					if err != nil {
 						logger.Error("unable to unload '%s' kernel module: %s", mod, err)
 					}
@@ -114,7 +117,9 @@ var removeCommand = &cobra.Command{
 			for _, gpu := range gpus {
 				if *gpu.PciDevice.Driver == driver {
 					// another gpu still requires the now unloaded driver, so reload it here
-
+					if err := k.Load(driver, "", 0); err != nil {
+						errChan <- err
+					}
 					// modprobe ${driver}
 					// if err := modprobe.Load(driver, ""); err != nil {
 					// 	errChan <- err
