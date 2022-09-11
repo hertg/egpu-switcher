@@ -13,17 +13,17 @@ VERSION := $(shell git describe --tags)
 DATE := $(shell date -u +%Y%m%d.%H%M%S)
 ORIGIN ?= make
 
-GOFLAGS := -buildmode=pie \
-					 -trimpath \
-					 -mod=readonly \
-					 -modcacherw \
-					 -ldflags "-X github.com/hertg/egpu-switcher/internal/buildinfo.Version=${VERSION} -X github.com/hertg/egpu-switcher/internal/buildinfo.BuildTime=${DATE} -X github.com/hertg/egpu-switcher/internal/buildinfo.Origin=${ORIGIN} -linkmode external -extldflags \"${LDFLAGS}\""
+# GOFLAGS := -buildmode=pie \
+# 					 -trimpath \
+# 					 -mod=readonly \
+# 					 -modcacherw \
+# 					 -ldflags "-X github.com/hertg/egpu-switcher/internal/buildinfo.Version=${VERSION} -X github.com/hertg/egpu-switcher/internal/buildinfo.BuildTime=${DATE} -X github.com/hertg/egpu-switcher/internal/buildinfo.Origin=${ORIGIN} -linkmode external -extldflags \"${LDFLAGS}\""
 
 all: build
 
 build:
 	go build \
-		${GOFLAGS} \
+		-ldflags "-X github.com/hertg/egpu-switcher/internal/buildinfo.Version=${VERSION} -X github.com/hertg/egpu-switcher/internal/buildinfo.BuildTime=${DATE} -X github.com/hertg/egpu-switcher/internal/buildinfo.Origin=${ORIGIN}" \
 		-o ${OUT_BIN}
 	@echo "binary compiled => ${OUT_BIN}"
 	go run . gendocs -o ${DOCS_DIR}

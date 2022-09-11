@@ -13,6 +13,7 @@ jobs:
           - linux/arm64
     env:
       FILENAME: egpu-switcher
+      ORIGIN: gh
     runs-on: ubuntu-latest
     name: Build and Publish Binaries (Go ${{ matrix.go }} / Arch ${{ matrix.goosarch }})
     steps:
