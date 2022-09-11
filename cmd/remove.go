@@ -12,9 +12,9 @@ import (
 	"github.com/hertg/egpu-switcher/internal/pci"
 	"github.com/hertg/egpu-switcher/internal/service"
 	"github.com/hertg/egpu-switcher/internal/xorg"
-	"github.com/pmorjan/kmod"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"pault.ag/go/modprobe"
 )
 
 var removeCommand = &cobra.Command{
@@ -56,7 +56,6 @@ var removeCommand = &cobra.Command{
 		}
 
 		errChan := make(chan error)
-		k, err := kmod.New()
 		if err != nil {
 			return err
 		}
@@ -111,7 +110,7 @@ var removeCommand = &cobra.Command{
 				}
 				modules := []string{"nvidia_uvm", "nvidia_drm", "nvidia_modeset", "nvidia"}
 				for _, mod := range modules {
-					if err := unloadMod(k, mod); err != nil {
+					if err := unloadMod(mod); err != nil {
 						panic(err)
 					}
 				}
@@ -127,11 +126,11 @@ var removeCommand = &cobra.Command{
 
 			// load kernel modules again, if another gpu requires the same driver
 			if loadModAgain {
-				if err := loadMod(k, driver); err != nil {
+				if err := loadMod(driver); err != nil {
 					errChan <- err
 				}
 				if driver == "nvidia" {
-					if err := loadMod(k, "nvidia_drm"); err != nil {
+					if err := loadMod("nvidia_drm"); err != nil {
 						errChan <- err
 					}
 				}
@@ -167,9 +166,9 @@ var removeCommand = &cobra.Command{
 	},
 }
 
-func loadMod(k *kmod.Kmod, name string) error {
+func loadMod(name string) error {
 	logger.Debug("attempting to load module '%s'...", name)
-	if err := k.Load(name, "", 0); err != nil {
+	if err := modprobe.Load(name, ""); err != nil {
 		logger.Error("loading module '%s' failed: %s", name, err)
 		return err
 	}
@@ -177,9 +176,9 @@ func loadMod(k *kmod.Kmod, name string) error {
 	return nil
 }
 
-func unloadMod(k *kmod.Kmod, name string) error {
+func unloadMod(name string) error {
 	logger.Debug("attempting to unload module '%s'...", name)
-	if err := k.Unload(name); err != nil {
+	if err := modprobe.Remove(name); err != nil {
 		logger.Error("unloading module '%s' failed: %s", name, err)
 		return err
 	}
