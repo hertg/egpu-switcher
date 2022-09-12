@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/hertg/egpu-switcher/internal/logger"
@@ -56,31 +57,54 @@ var switchCommand = &cobra.Command{
 			return fmt.Errorf("no configuration found")
 		}
 
-		// TODO: give the eGPU time to connect
-		gpu := pci.Find(uint64(id))
-
-		switch arg {
-		case "internal":
+		if arg == "internal" {
+			logger.Success("switch successful")
 			return switchInternal()
+		}
+
+		gpu := pci.Find(uint64(id))
+	Outer:
+		switch arg {
 		case "egpu", "external":
-			// note: the 'external' is still valid for backwards compatibility
 			if gpu == nil {
 				return fmt.Errorf("the eGPU is not connected, unable to switch")
 			}
-			return switchEgpu(gpu)
+			err = switchEgpu(gpu)
+			break
 		case "auto":
-			green := color.New(color.FgHiGreen).SprintFunc()
-			red := color.New(color.FgHiRed).SprintFunc()
+			logger.Info("looking for eGPU...")
+
 			if gpu != nil {
-				logger.Info("the eGPU is %s", green("connected"))
-				return switchEgpu(gpu)
-			} else {
-				logger.Info("the eGPU is %s", red("disconnected"))
-				return switchInternal()
+				err = switchAuto(gpu)
+				break Outer
+			}
+
+			maxRetries := viper.GetInt("detection.retries")
+			interval := viper.GetInt("detection.interval")
+			attempt := 0
+			for {
+				if attempt > maxRetries {
+					logger.Info("giving up after %d retries", maxRetries)
+					err = switchAuto(gpu)
+					break Outer
+				}
+				<-time.After(time.Duration(interval) * time.Millisecond)
+				gpu = pci.Find(uint64(id))
+				if gpu != nil {
+					err = switchAuto(gpu)
+					break Outer
+				}
+				attempt += 1
 			}
 		default:
 			return fmt.Errorf("unknown value %s", arg)
 		}
+
+		if err == nil {
+			logger.Success("switch completed")
+		}
+
+		return err
 	},
 }
 
@@ -116,4 +140,15 @@ func switchEgpu(gpu *pci.GPU) error {
 
 func switchInternal() error {
 	return xorg.RemoveEgpuFile(x11ConfPath, verbose)
+}
+
+func switchAuto(gpu *pci.GPU) error {
+	green := color.New(color.FgHiGreen).SprintFunc()
+	red := color.New(color.FgHiRed).SprintFunc()
+	if gpu != nil {
+		logger.Info("the egpu is %s", green("connected"))
+		return switchEgpu(gpu)
+	}
+	logger.Info("the egpu is %s", red("disconnected"))
+	return switchInternal()
 }

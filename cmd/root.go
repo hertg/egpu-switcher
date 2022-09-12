@@ -41,6 +41,10 @@ func initConfig() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
+	// defaults
+	viper.SetDefault("detection.retries", 6)
+	viper.SetDefault("detection.interval", 500)
+
 	u, err := user.Current()
 	if err != nil {
 		logger.Warn("unable to get current user. if you run into permission issues, retry running as root")
