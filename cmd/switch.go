@@ -154,7 +154,7 @@ func switchInternal() error {
 	}
 	if post := viper.GetString("hooks.internal"); post != "" {
 		if err := runHook(post); err != nil {
-			logger.Error("egpu hook error: %s", err)
+			logger.Error("internal hook error: %s", err)
 		}
 	}
 	return nil
@@ -174,7 +174,7 @@ func switchAuto(gpu *pci.GPU) error {
 
 func runHook(script string) error {
 	if !permissionCheck(script) {
-		return fmt.Errorf("hook scripts need to be sufficiently protected because they are run as root")
+		return fmt.Errorf("hook %s will not be executed", script)
 	}
 	cmd := exec.Command("/bin/sh", script)
 	err := cmd.Run()
@@ -187,7 +187,7 @@ func runHook(script string) error {
 func permissionCheck(file string) bool {
 	info, err := os.Stat(file)
 	if err != nil {
-		logger.Debug("unable to get info about %s: %s", file, err)
+		logger.Error("%s", err)
 		return false
 	}
 	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
