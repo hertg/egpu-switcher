@@ -3,7 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/fatih/color"
@@ -135,11 +137,27 @@ func switchEgpu(gpu *pci.GPU) error {
 	}
 
 	conf := xorg.RenderConf("Device0", driver, gpu.XorgPCIString())
-	return xorg.CreateEgpuFile(x11ConfPath, conf, verbose)
+	if err := xorg.CreateEgpuFile(x11ConfPath, conf, verbose); err != nil {
+		return err
+	}
+	if post := viper.GetString("hooks.egpu"); post != "" {
+		if err := runHook(post); err != nil {
+			logger.Error("egpu hook error: %s", err)
+		}
+	}
+	return nil
 }
 
 func switchInternal() error {
-	return xorg.RemoveEgpuFile(x11ConfPath, verbose)
+	if err := xorg.RemoveEgpuFile(x11ConfPath, verbose); err != nil {
+		return err
+	}
+	if post := viper.GetString("hooks.internal"); post != "" {
+		if err := runHook(post); err != nil {
+			logger.Error("egpu hook error: %s", err)
+		}
+	}
+	return nil
 }
 
 func switchAuto(gpu *pci.GPU) error {
@@ -147,8 +165,41 @@ func switchAuto(gpu *pci.GPU) error {
 	red := color.New(color.FgHiRed).SprintFunc()
 	if gpu != nil {
 		logger.Info("the egpu is %s", green("connected"))
-		return switchEgpu(gpu)
+		err := switchEgpu(gpu)
+		return err
 	}
 	logger.Info("the egpu is %s", red("disconnected"))
 	return switchInternal()
+}
+
+func runHook(script string) error {
+	if !permissionCheck(script) {
+		return fmt.Errorf("hook scripts need to be sufficiently protected because they are run as root")
+	}
+	cmd := exec.Command("/bin/sh", script)
+	err := cmd.Run()
+	if err == nil {
+		logger.Info("hook script '%s' executed", script)
+	}
+	return err
+}
+
+func permissionCheck(file string) bool {
+	info, err := os.Stat(file)
+	if err != nil {
+		logger.Debug("unable to get info about %s: %s", file, err)
+		return false
+	}
+	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+		if stat.Uid != 0 {
+			logger.Error("hook script '%s' must be owned by root", file)
+			return false
+		}
+		if info.Mode() != 0700 {
+			logger.Error("hook script '%s' must have permission 0700", file)
+			return false
+		}
+		return true
+	}
+	return false
 }
