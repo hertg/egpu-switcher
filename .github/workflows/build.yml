@@ -21,6 +21,7 @@ jobs:
     env:
       GOARCH: ${{ inputs.go-arch }}
       BINARY_NAME: ${{ format('{0}-{1}', inputs.filename, inputs.go-arch) }}
+      ORIGIN: gh
     steps:
 
       - name: Checkout
