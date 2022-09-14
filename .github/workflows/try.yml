@@ -7,6 +7,7 @@ on:
 
 jobs:
   test:
+    name: Test
     strategy:
       matrix:
         go: [ '1.19' ]
@@ -15,6 +16,7 @@ jobs:
       go-version: ${{ matrix.go }}
 
   build:
+    name: Build
     needs: test
     strategy:
       matrix:

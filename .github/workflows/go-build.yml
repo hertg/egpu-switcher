@@ -17,7 +17,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Run tests (Go ${{ inputs.go-version }})
+    name: Run build (Go ${{ inputs.go-version }})
     env:
       GOARCH: ${{ inputs.go-arch }}
       BINARY_NAME: ${{ format('{0}-{1}', inputs.filename, inputs.go-arch) }}
