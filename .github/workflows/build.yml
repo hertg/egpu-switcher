@@ -25,6 +25,11 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          # without that 'git describe --tags' may result
+          # in 'fatal: No names found, cannot describe anything.'
+          # see https://stackoverflow.com/a/71721059/2726733
+          fetch-depth: 0
 
       - name: Setup go
         uses: actions/setup-go@v3
