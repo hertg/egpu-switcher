@@ -1,7 +1,8 @@
 # reusable workflow
 name: Test
-on:
-  workfow_call:
+
+on: workfow_call
+
 jobs:
   test:
     runs-on: ubuntu-latest

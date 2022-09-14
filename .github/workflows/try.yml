@@ -1,4 +1,5 @@
 name: TEST WORKFLOW
+
 on:
   push:
     branches:
@@ -6,4 +7,5 @@ on:
 
 jobs:
   test:
+    # name: Run tests and linters
     uses: ./.github/workflows/test.yml
