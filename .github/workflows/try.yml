@@ -12,6 +12,7 @@ jobs:
     strategy:
       matrix:
         go: [ '1.19' ]
-    uses: ./.github/workflows/test.yml
-    with:
-      go-version: ${{ matrix.go }}
+    steps:
+      - uses: ./.github/workflows/test.yml
+        with:
+          go-version: ${{ matrix.go }}
