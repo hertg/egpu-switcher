@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         go: [ '1.19' ]
-    uses: ./.github/workflows/test.yml
+    uses: ./.github/workflows/go-test.yml
     with:
       go-version: ${{ matrix.go }}
 
@@ -20,7 +20,7 @@ jobs:
       matrix:
         go: [ '1.19' ]
         arch: [ 'amd64', 'arm64' ]
-    uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/go-build.yml
     with:
       go-version: ${{ matrix.go }}
       go-arch: ${{ matrix.arch }}
@@ -32,3 +32,5 @@ jobs:
   # package-deb:
   #   needs: build
 
+  # create-release:
+  #   needs: [package-arch, package-deb]
