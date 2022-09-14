@@ -24,3 +24,4 @@ jobs:
     with:
       go-version: ${{ matrix.go }}
       go-arch: ${{ matrix.arch }}
+      filename: egpu-switcher
