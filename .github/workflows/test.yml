@@ -1,0 +1,37 @@
+# reusable workflow
+name: Test
+on:
+  workfow_call:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test (Go ${{ matrix.go }})
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Run tests
+        run: make test
+
+  lint:
+    runs-on: ubuntu-latest
+    name: Test (Go ${{ matrix.go }})
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Run linters
+        run: make lint
+

@@ -1,0 +1,9 @@
+name: TEST WORKFLOW
+on:
+  push:
+    branches:
+      - 'dev'
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
