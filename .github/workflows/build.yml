@@ -20,7 +20,7 @@ jobs:
     name: Run tests (Go ${{ inputs.go-version }})
     env:
       GOARCH: ${{ inputs.go-arch }}
-      BINARY_NAME: ${{ format('${0}-${1}', inputs.filename, inputs.go-arch) }}
+      BINARY_NAME: ${{ format('{0}-{1}', inputs.filename, inputs.go-arch) }}
     steps:
 
       - name: Checkout
@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${BINARY_NAME}
-          path: ./bin/${BINARY_NAME}
+          path: ./bin/${{ env.BINARY_NAME }}
 
   # lint:
   #   runs-on: ubuntu-latest
