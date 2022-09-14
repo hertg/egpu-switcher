@@ -1,12 +1,17 @@
 # reusable workflow
 name: Test
 
-on: workflow_call
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        required: true
+        type: string
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: Test (Go ${{ matrix.go }})
+    name: Run tests (Go ${{ inputs.go-version }})
     steps:
 
       - name: Checkout
@@ -15,14 +20,14 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v2
         with:
-          go-version: ${{ matrix.go }}
+          go-version: ${{ inputs.go-version }}
 
       - name: Run tests
         run: make test
 
   lint:
     runs-on: ubuntu-latest
-    name: Test (Go ${{ matrix.go }})
+    name: Run linters (Go ${{ inputs.go-version }})
     steps:
 
       - name: Checkout
@@ -31,7 +36,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v2
         with:
-          go-version: ${{ matrix.go }}
+          go-version: ${{ inputs.go-version }}
 
       - name: Run linters
         run: make lint

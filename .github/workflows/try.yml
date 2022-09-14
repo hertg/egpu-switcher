@@ -8,4 +8,10 @@ on:
 jobs:
   test:
     # name: Run tests and linters
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ '1.19' ]
     uses: ./.github/workflows/test.yml
+    with:
+      go-version: ${{ matrix.go }}
