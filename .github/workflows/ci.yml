@@ -1,53 +1,53 @@
-name: CI
-on:
-  pull_request:
-  push:
-    branches:
-      - '*'
-    tags-ignore:
-      - '*'
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go: [ '1.19' ]
-    name: Test (Go ${{ matrix.go }})
-    steps:
+# name: CI
+# on:
+#   pull_request:
+#   push:
+#     branches:
+#       - '*'
+#     tags-ignore:
+#       - '*'
+# jobs:
+#   test:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         go: [ '1.19' ]
+#     name: Test (Go ${{ matrix.go }})
+#     steps:
 
-      - name: Checkout
-        uses: actions/checkout@v2
+#       - name: Checkout
+#         uses: actions/checkout@v2
 
-      - name: Setup go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go }}
+#       - name: Setup go
+#         uses: actions/setup-go@v3
+#         with:
+#           go-version: ${{ matrix.go }}
 
-      - name: Run linters
-        run: make lint
+#       - name: Run linters
+#         run: make lint
 
-      - name: Run tests
-        run: make test
+#       - name: Run tests
+#         run: make test
 
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go: [ '1.19' ]
-        goosarch:
-          - linux/amd64
-          - linux/arm64
-    name: Build (Go ${{ matrix.go }} / Arch ${{ matrix.goosarch }})
-    steps:
+#   build:
+#     needs: test
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         go: [ '1.19' ]
+#         goosarch:
+#           - linux/amd64
+#           - linux/arm64
+#     name: Build (Go ${{ matrix.go }} / Arch ${{ matrix.goosarch }})
+#     steps:
 
-      - name: Checkout
-        uses: actions/checkout@v2
+#       - name: Checkout
+#         uses: actions/checkout@v2
 
-      - name: Setup go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go }}
+#       - name: Setup go
+#         uses: actions/setup-go@v3
+#         with:
+#           go-version: ${{ matrix.go }}
 
-      - name: Run build
-        run: make build
+#       - name: Run build
+#         run: make build
