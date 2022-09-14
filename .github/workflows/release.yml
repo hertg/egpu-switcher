@@ -1,9 +1,9 @@
 name: Release
-# on:
-#   push:
-#     tags:
-#       - 'v*'
-# jobs:
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
 #   release:
 #     strategy:
 #       matrix:
