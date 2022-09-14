@@ -21,6 +21,7 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ inputs.go-version }}
+          cache: true
 
       - name: Run tests
         run: make test
@@ -37,6 +38,7 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ inputs.go-version }}
+          cache: true
 
       - name: Run linters
         run: make lint

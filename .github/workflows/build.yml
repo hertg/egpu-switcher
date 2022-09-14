@@ -1,0 +1,67 @@
+# reusable workflow
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        required: true
+        type: string
+      go-arch:
+        required: true
+        type: string
+      filename:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Run tests (Go ${{ inputs.go-version }})
+    env:
+      GOARCH: ${{ inputs.go-arch }}
+      BINARY_NAME: ${{ format('${0}-${1}', inputs.filename, inputs.go-arch) }}
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache: true
+
+      # - name: Get OS and arch info
+      #   run: |
+      #     GOOSARCH=${{matrix.goosarch}}
+      #     GOARCH=${GOOSARCH#*/}
+      #     BINARY_NAME=${{env.FILENAME}}-$GOARCH
+      #     echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+      #     echo "GOARCH=$GOARCH" >> $GITHUB_ENV
+
+      - name: Run build
+        run: make build
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${BINARY_NAME}
+          path: ./bin/${BINARY_NAME}
+
+  # lint:
+  #   runs-on: ubuntu-latest
+  #   name: Run linters (Go ${{ inputs.go-version }})
+  #   steps:
+
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+
+  #     - name: Setup go
+  #       uses: actions/setup-go@v2
+  #       with:
+  #         go-version: ${{ inputs.go-version }}
+
+  #     - name: Run linters
+  #       run: make lint
+

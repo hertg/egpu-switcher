@@ -14,3 +14,13 @@ jobs:
     with:
       go-version: ${{ matrix.go }}
 
+  build:
+    needs: test
+    strategy:
+      matrix:
+        go: [ '1.19' ]
+        arch: [ 'amd64', 'arm64' ]
+    uses: ./.github/workflows/build.yml
+    with:
+      go-version: ${{ matrix.go }}
+      go-arch: ${{ matrix.arch }}
