@@ -6,7 +6,7 @@ on:
       - '*'
     tags-ignore:
       - '*'
-# jobs:
+jobs:
 #   test:
 #     runs-on: ubuntu-latest
 #     strategy:

@@ -1,0 +1,25 @@
+# This PKGBUILD is not a full PKGBUILD
+# pkgver, source, and sha1sums are to be generated
+pkgname=${_pkgname}
+pkgver=${_pkgver}
+pkgdesc='Automatically detect and use eGPU on startup'
+pkgrel=1
+arch=(x86_64)
+license=('GPL')
+url='https://github.com/hertg/egpu-switcher'
+makedepends=('go')
+provides=(egpu-switcher)
+conflicts=(egpu-switcher)
+install=${_pkgname}.install
+source=($pkgname-$pkgver.tar.gz::https://github.com/hertg/egpu-switcher/archive/refs/tags/$pkgver.tar.gz)
+sha256sums=('SKIP')
+
+build() {
+  cd "$srcdir/$pkgname-$pkgver"
+	make build -s
+}
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver"
+	make DESTDIR="$pkgdir/" install -s
+}

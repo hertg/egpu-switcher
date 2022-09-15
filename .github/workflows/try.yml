@@ -28,11 +28,14 @@ jobs:
       go-arch: ${{ matrix.arch }}
       filename: egpu-switcher
 
-  # package-arch:
-  #   needs: build
+  # TODO: Create Github Release
 
+  # TODO: AUR Publish
+  # aur:
+  #   name: Publish to AUR
+  #   needs: [test, build]
+
+  # TODO: Debian package
   # package-deb:
   #   needs: build
 
-  # create-release:
-  #   needs: [package-arch, package-deb]

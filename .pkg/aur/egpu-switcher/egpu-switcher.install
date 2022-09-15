@@ -1,0 +1,15 @@
+pre_remove() {
+    egpu-switcher disable
+}
+
+post_install() {
+    egpu-switcher enable --no-prompt
+}
+
+pre_upgrade() {
+    egpu-switcher cleanup
+}
+
+post_upgrade() {
+    egpu-switcher enable --no-prompt
+}
