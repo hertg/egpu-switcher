@@ -48,6 +48,8 @@ jobs:
       matrix:
         binary: [ 'egpu-switcher-amd64', 'egpu-switcher-arm64' ]
     uses: ./.github/workflows/github-release.yml
+    with:
+      binary: ${{ matrix.binary }}
 
   aur:
     name: Publish to AUR
