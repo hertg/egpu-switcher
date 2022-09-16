@@ -44,11 +44,14 @@ jobs:
   release:
     name: Github Release
     needs: [build, version]
+    strategy:
+      matrix:
+        binary: [ 'egpu-switcher-amd64', 'egpu-switcher-arm64' ]
     uses: ./.github/workflows/github-release.yml
 
   aur:
     name: Publish to AUR
-    needs: [test, build, version]
+    needs: [build, version, release]
     uses: ./.github/workflows/aur-release.yml
     with:
       version: ${{ needs.version.outputs.tag }}

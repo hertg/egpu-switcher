@@ -3,11 +3,15 @@ name: Create Github Release
 
 on:
   workflow_call:
+    inputs:
+      binary:
+        type: string
+        required: true
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    name: Run tests (Go ${{ inputs.go-version }})
+    name: Release ${{ inputs.binary }}
     steps:
 
       - name: Checkout
@@ -15,13 +19,13 @@ jobs:
 
       - uses: actions/download-artifact@v3
         with:
-          name: egpu-switcher-amd64
+          name: ${{ inputs.binary }}
           path: ./download
 
       - name: Create Github Release
         uses: softprops/action-gh-release@v1
         with:
           draft: false
-          files: download/egpu-switcher-amd64
+          files: download/${{ inputs.binary }}
           prerelease: ${{ contains(github.ref, '-rc.') }}
 

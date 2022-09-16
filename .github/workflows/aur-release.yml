@@ -11,7 +11,7 @@ on:
 jobs:
   pkgbuild:
     runs-on: ubuntu-latest
-    name: Run tests (Go ${{ inputs.go-version }})
+    name: Generate AUR PKGBUILD
     steps:
 
       - name: Checkout
@@ -26,12 +26,9 @@ jobs:
         run: echo "SHA256=$(cat ./download/sha256sum.txt | cut -d' ' -f1)" >> $GITHUB_ENV
 
       - name: Get Version
-        run: echo "VERSION=$(echo ${{ inputs.version }} | sed 's/\([^-]*-g\)/r\1/;s/-/./g')"
+        run: echo "VERSION=$(echo ${{ inputs.version }} | sed 's/\([^-]*-g\)/r\1/;s/-/./g')" >> $GITHUB_ENV
 
-      - name: version
-        run: echo "${{ env.VERSION }}"
-
-      - name: Run tests
+      - name: Generate PKGBUILD
         run: ./.ci/generate-pkgbuild.sh ${{ env.VERSION }} ${{ env.SHA256 }}
 
       - name: Upload egpu-switcher PKGBUILD
