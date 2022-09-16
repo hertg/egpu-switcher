@@ -1,0 +1,27 @@
+# reusable workflow
+name: Create Github Release
+
+on:
+  workflow_call:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: Run tests (Go ${{ inputs.go-version }})
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: egpu-switcher-amd64
+          path: ./download
+
+      - name: Create Github Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: false
+          files: download/egpu-switcher-amd64
+          prerelease: ${{ contains(github.ref, '-rc.') }}
+

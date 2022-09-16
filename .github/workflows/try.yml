@@ -4,8 +4,11 @@ on:
   push:
     branches:
       - 'dev'
+    tags:
+      - 'v*'
 
 jobs:
+
   test:
     name: Test
     strategy:
@@ -29,21 +32,23 @@ jobs:
       filename: egpu-switcher
 
   version:
-    runs-on: ubuntu-latest
+    name: Extract Version
     if: startsWith(github.ref, 'refs/tags/')
-    name: Version
+    runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.vars.outputs.tag }}
     steps:
       - id: vars
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
 
-  # TODO: Create Github Release
+  release:
+    name: Github Release
+    needs: [build, version]
+    uses: ./.github/workflows/github-release.yml
 
-  # TODO: AUR Publish
   aur:
     name: Publish to AUR
-    needs: [test, build,version]
+    needs: [test, build, version]
     uses: ./.github/workflows/aur-release.yml
     with:
       version: ${{ needs.version.outputs.tag }}
