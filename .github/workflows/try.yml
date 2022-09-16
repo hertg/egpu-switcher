@@ -31,9 +31,12 @@ jobs:
   # TODO: Create Github Release
 
   # TODO: AUR Publish
-  # aur:
-  #   name: Publish to AUR
-  #   needs: [test, build]
+  aur:
+    name: Publish to AUR
+    needs: [test, build]
+    uses: ./.github/workflows/aur-release.yml
+    with:
+      version: ${{ github.ref }}
 
   # TODO: Debian package
   # package-deb:

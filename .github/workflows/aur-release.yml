@@ -1,0 +1,48 @@
+# reusable workflow
+name: Publish to AUR
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      # ref:
+      #   required: true
+      #   type: string
+
+jobs:
+  pkgbuild:
+    runs-on: ubuntu-latest
+    name: Run tests (Go ${{ inputs.go-version }})
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: egpu-switcher-amd64
+          path: ./download
+
+      - name: Get Checksum
+        run: echo "SHA256=$(cat ./download/sha256sum.txt | cut -d' ' -f1)" >> $GITHUB_ENV
+
+      - name: version
+        run: echo "${{ inputs.version }}"
+
+      - name: Run tests
+        run: ./.ci/generate-pkgbuild.sh ${{ inputs.version }} ${{ env.SHA256 }}
+
+      - name: Upload egpu-switcher PKGBUILD
+        uses: actions/upload-artifact@v3
+        with:
+          name: egpu-switcher-PKGBUILD
+          path: ./.pkgbuild/egpu-switcher/*
+
+      - name: Upload egpu-switcher-bin PKGBUILD
+        uses: actions/upload-artifact@v3
+        with:
+          name: egpu-switcher-bin-PKGBUILD
+          path: ./.pkgbuild/egpu-switcher-bin/*
+

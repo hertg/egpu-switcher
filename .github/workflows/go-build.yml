@@ -41,9 +41,12 @@ jobs:
       - name: Run build
         run: make build
 
+      - name: Create SHA256 Checksum
+        run: sha256sum ./bin/${{ env.BINARY_NAME }} > ./bin/sha256sum.txt || exit $?
+
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.BINARY_NAME }}
-          path: ./bin/${{ env.BINARY_NAME }}
+          path: ./bin/*
 
