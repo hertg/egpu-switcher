@@ -7,9 +7,6 @@ on:
       version:
         required: true
         type: string
-      # ref:
-      #   required: true
-      #   type: string
 
 jobs:
   pkgbuild:
@@ -28,11 +25,14 @@ jobs:
       - name: Get Checksum
         run: echo "SHA256=$(cat ./download/sha256sum.txt | cut -d' ' -f1)" >> $GITHUB_ENV
 
+      - name: Get Version
+        run: echo "VERSION=$(echo ${{ inputs.version }} | sed 's/\([^-]*-g\)/r\1/;s/-/./g')"
+
       - name: version
-        run: echo "${{ inputs.version }}"
+        run: echo "${{ env.VERSION }}"
 
       - name: Run tests
-        run: ./.ci/generate-pkgbuild.sh ${{ inputs.version }} ${{ env.SHA256 }}
+        run: ./.ci/generate-pkgbuild.sh ${{ env.VERSION }} ${{ env.SHA256 }}
 
       - name: Upload egpu-switcher PKGBUILD
         uses: actions/upload-artifact@v3
