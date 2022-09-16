@@ -9,7 +9,7 @@ makedepends=('go')
 provides=(egpu-switcher)
 conflicts=(egpu-switcher)
 install=${pkgname}.install
-source=($pkgname-$pkgver.tar.gz::https://github.com/hertg/egpu-switcher/archive/refs/tags/$pkgver.tar.gz)
+source=($_source)
 sha256sums=('SKIP')
 
 build() {
