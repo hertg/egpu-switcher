@@ -28,15 +28,25 @@ jobs:
       go-arch: ${{ matrix.arch }}
       filename: egpu-switcher
 
+  version:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    name: Version
+    outputs:
+      tag: ${{ steps.vars.outputs.tag }}
+    steps:
+      - id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
   # TODO: Create Github Release
 
   # TODO: AUR Publish
   aur:
     name: Publish to AUR
-    needs: [test, build]
+    needs: [test, build,version]
     uses: ./.github/workflows/aur-release.yml
     with:
-      version: ${{ github.ref }}
+      version: ${{ needs.version.outputs.tag }}
 
   # TODO: Debian package
   # package-deb:
