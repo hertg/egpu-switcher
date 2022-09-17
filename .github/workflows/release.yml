@@ -55,6 +55,10 @@ jobs:
     uses: ./.github/workflows/aur-release.yml
     with:
       version: ${{ needs.version.outputs.tag }}
+    secrets:
+      AUR_EMAIL: ${{ secrets.AUR_EMAIL }}
+      AUR_USERNAME: ${{ secrets.AUR_USERNAME }}
+      AUR_PRIVATE_KEY: ${{ secrets.AUR_PRIVATE_KEY }}
 
   # TODO: Debian package
   # package-deb:
