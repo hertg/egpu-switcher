@@ -7,6 +7,13 @@ on:
       version:
         required: true
         type: string
+    secrets:
+      AUR_USERNAME:
+        required: true
+      AUR_EMAIL:
+        required: true
+      AUR_PRIVATE_KEY:
+        required: true
 
 jobs:
   pkgbuild:
