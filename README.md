@@ -13,10 +13,6 @@
   </p>
 </div>
 
-> **Note**: The main branch is now tracking a completely new version of egpu-switcher
-> that hasn't been fully released yet. To get the `README` of the most recent release
-> head over to [the `legacy` branch](https://github.com/hertg/egpu-switcher/tree/legacy).
-
 ## Description
 
 The goal of this CLI is to lower the barrier for Linux users to
@@ -45,11 +41,16 @@ and if so, make X.Org prefer it.
 
 ### Ubuntu (apt)
 
-*TODO*
+*The PPA is no longer maintained for now (see #90)*
 
 ### Arch (aur)
 
-*TODO*
+```bash
+paru -S egpu-switcher
+```
+
+> **Note**: [paru](https://github.com/morganamilo/paru) is an AUR helper
+> written in Rust :crab:
 
 ### Manual
 
