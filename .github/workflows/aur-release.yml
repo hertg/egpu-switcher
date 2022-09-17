@@ -17,15 +17,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - uses: actions/download-artifact@v3
+      - name: Download binary
+        uses: actions/download-artifact@v3
         with:
           name: egpu-switcher-amd64
           path: ./download
 
-      - name: Get Checksum
+      - name: Export Checksum
         run: echo "SHA256=$(cat ./download/sha256sum.txt | cut -d' ' -f1)" >> $GITHUB_ENV
 
-      - name: Generate PKGBUILD
+      - name: Generate PKGBUILDs
         run: ./.ci/generate-pkgbuild.sh ${{ inputs.version }} ${{ env.SHA256 }}
 
       - name: Upload egpu-switcher PKGBUILD
