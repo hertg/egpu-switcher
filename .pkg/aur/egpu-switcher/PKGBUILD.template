@@ -12,12 +12,15 @@ install=${pkgname}.install
 source=($_source)
 sha256sums=('SKIP')
 
+# NOTE: github will strip the 'v' prefix from the tag when
+# creating the source tarball, see https://stackoverflow.com/a/5796902
+
 build() {
-  cd "$srcdir/$pkgname-$pkgver"
+  cd "$srcdir/$pkgname-$_versionWithoutPrefix"
 	make build -s
 }
 
 package() {
-  cd "$srcdir/$pkgname-$pkgver"
+  cd "$srcdir/$pkgname-$_versionWithoutPrefix"
 	make DESTDIR="$pkgdir/" install -s
 }
