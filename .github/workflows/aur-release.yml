@@ -1,0 +1,72 @@
+# reusable workflow
+name: Publish to AUR
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+    secrets:
+      AUR_USERNAME:
+        required: true
+      AUR_EMAIL:
+        required: true
+      AUR_PRIVATE_KEY:
+        required: true
+
+jobs:
+  pkgbuild:
+    runs-on: ubuntu-latest
+    name: Generate AUR PKGBUILD
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download binary
+        uses: actions/download-artifact@v3
+        with:
+          name: egpu-switcher-amd64
+          path: ./download
+
+      - name: Export Checksum
+        run: echo "SHA256=$(cat ./download/sha256sum.txt | cut -d' ' -f1)" >> $GITHUB_ENV
+
+      - name: Generate PKGBUILDs
+        run: ./.ci/generate-pkgbuild.sh ${{ inputs.version }} ${{ env.SHA256 }}
+
+      - name: Upload egpu-switcher PKGBUILD
+        uses: actions/upload-artifact@v3
+        with:
+          name: egpu-switcher-PKGBUILD
+          path: ./.pkgbuild/egpu-switcher/*
+
+      - name: Upload egpu-switcher-bin PKGBUILD
+        uses: actions/upload-artifact@v3
+        with:
+          name: egpu-switcher-bin-PKGBUILD
+          path: ./.pkgbuild/egpu-switcher-bin/*
+
+      - name: Publish egpu-switcher
+        uses: KSXGitHub/github-actions-deploy-aur@v2.5.0
+        with:
+          pkgname: egpu-switcher
+          pkgbuild: ./.pkgbuild/egpu-switcher/PKGBUILD
+          force_push: true
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_PRIVATE_KEY }}
+          commit_message: New release via github actions
+
+      - name: Publish egpu-switcher-bin
+        uses: KSXGitHub/github-actions-deploy-aur@v2.5.0
+        with:
+          pkgname: egpu-switcher-bin
+          pkgbuild: ./.pkgbuild/egpu-switcher-bin/PKGBUILD
+          force_push: true
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_PRIVATE_KEY }}
+          commit_message: New release via github actions
+

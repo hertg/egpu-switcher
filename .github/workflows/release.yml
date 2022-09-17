@@ -1,50 +1,66 @@
 name: Release
+
 on:
   push:
     tags:
-      - 'v*'
+      - '*'
+
 jobs:
-  release:
+
+  test:
+    name: Test
     strategy:
       matrix:
         go: [ '1.19' ]
-        goosarch:
-          - linux/amd64
-          - linux/arm64
-    env:
-      FILENAME: egpu-switcher
-      ORIGIN: gh
+    uses: ./.github/workflows/go-test.yml
+    with:
+      go-version: ${{ matrix.go }}
+
+  build:
+    name: Build
+    needs: test
+    strategy:
+      matrix:
+        go: [ '1.19' ]
+        arch: [ 'amd64', 'arm64' ]
+    uses: ./.github/workflows/go-build.yml
+    with:
+      go-version: ${{ matrix.go }}
+      go-arch: ${{ matrix.arch }}
+      filename: egpu-switcher
+
+  version:
+    name: Extract Version
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
-    name: Build and Publish Binaries (Go ${{ matrix.go }} / Arch ${{ matrix.goosarch }})
+    outputs:
+      tag: ${{ steps.vars.outputs.tag }}
     steps:
+      - id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
 
-      - name: Checkout
-        uses: actions/checkout@v2
+  release:
+    name: Github Release
+    needs: [build, version]
+    strategy:
+      matrix:
+        binary: [ 'egpu-switcher-amd64', 'egpu-switcher-arm64' ]
+    uses: ./.github/workflows/github-release.yml
+    with:
+      binary: ${{ matrix.binary }}
 
-      - name: Setup go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go }}
+  aur:
+    name: Publish to AUR
+    needs: [build, version, release]
+    uses: ./.github/workflows/aur-release.yml
+    with:
+      version: ${{ needs.version.outputs.tag }}
+    secrets:
+      AUR_EMAIL: ${{ secrets.AUR_EMAIL }}
+      AUR_USERNAME: ${{ secrets.AUR_USERNAME }}
+      AUR_PRIVATE_KEY: ${{ secrets.AUR_PRIVATE_KEY }}
 
-      # the following steps only run on tags
-      # credits: https://stackoverflow.com/a/66959862
-      - name: Get OS and arch info
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          GOOSARCH=${{matrix.goosarch}}
-          GOARCH=${GOOSARCH#*/}
-          BINARY_NAME=${{env.FILENAME}}-$GOARCH
-          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
-          echo "GOARCH=$GOARCH" >> $GITHUB_ENV
+  # TODO: Debian package
+  # package-deb:
+  #   needs: build
 
-      - name: Run build
-        if: startsWith(github.ref, 'refs/tags/')
-        run: make build
-
-      - name: Create Github Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          draft: false
-          files: bin/${{env.BINARY_NAME}}
-          prerelease: ${{ contains(github.ref, '-rc.') }}

@@ -1,0 +1,52 @@
+# reusable workflow
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        required: true
+        type: string
+      go-arch:
+        required: true
+        type: string
+      filename:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Run build (Go ${{ inputs.go-version }})
+    env:
+      GOARCH: ${{ inputs.go-arch }}
+      BINARY_NAME: ${{ format('{0}-{1}', inputs.filename, inputs.go-arch) }}
+      ORIGIN: gh
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # without that 'git describe --tags' may result
+          # in 'fatal: No names found, cannot describe anything.'
+          # see https://stackoverflow.com/a/71721059/2726733
+          fetch-depth: 0
+
+      - name: Setup go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache: true
+
+      - name: Run build
+        run: make build
+
+      - name: Create SHA256 Checksum
+        run: sha256sum ./bin/${{ env.BINARY_NAME }} > ./bin/sha256sum.txt || exit $?
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.BINARY_NAME }}
+          path: ./bin/*
+

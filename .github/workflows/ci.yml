@@ -6,48 +6,14 @@ on:
       - '*'
     tags-ignore:
       - '*'
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: Test
     strategy:
       matrix:
         go: [ '1.19' ]
-    name: Test (Go ${{ matrix.go }})
-    steps:
+    uses: ./.github/workflows/go-test.yml
+    with:
+      go-version: ${{ matrix.go }}
 
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go }}
-
-      - name: Run linters
-        run: make lint
-
-      - name: Run tests
-        run: make test
-
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go: [ '1.19' ]
-        goosarch:
-          - linux/amd64
-          - linux/arm64
-    name: Build (Go ${{ matrix.go }} / Arch ${{ matrix.goosarch }})
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go }}
-
-      - name: Run build
-        run: make build
