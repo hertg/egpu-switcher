@@ -9,7 +9,7 @@ OUT_DIR := ./bin
 BINARY_NAME ?= egpu-switcher
 OUT_BIN := ${OUT_DIR}/${BINARY_NAME}
 
-VERSION := $(shell git describe --tags)
+VERSION ?= $(shell git describe --tags)
 DATE := $(shell date -u +%Y%m%d.%H%M%S)
 ORIGIN ?= make
 

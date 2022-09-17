@@ -17,7 +17,7 @@ sha256sums=('SKIP')
 
 build() {
   cd "$srcdir/$pkgname-$_versionWithoutPrefix"
-	make build -s
+	make VERSION="$_version" ORIGIN="aur" build -s
 }
 
 package() {
