@@ -49,12 +49,15 @@ and if so, make X.Org prefer it.
 paru -S egpu-switcher
 ```
 
-> **Note**: [paru](https://github.com/morganamilo/paru) is an AUR helper
-> written in Rust :crab:
+> :deciduous_tree::zap: Save time and energy by using the pre-compiled `egpu-switcher-bin` package
 
 ### Manual
 
-Installation and setup:
+#### Prerequisites
+
+Install the [go toolchain](https://go.dev/doc/install)
+
+#### Installation and setup
 
 ```bash
 git clone git@github.com:hertg/egpu-switcher.git
@@ -64,7 +67,7 @@ sudo make install -s
 sudo egpu-switcher enable
 ```
 
-Uninstall:
+#### Uninstall
 
 ```bash
 sudo egpu-switcher disable
