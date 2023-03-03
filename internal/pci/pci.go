@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/hertg/egpu-switcher/internal/logger"
 	"github.com/hertg/gopci/pkg/pci"
 )
 
@@ -93,6 +94,7 @@ func ReadGPUs() []*GPU {
 	}
 	devices, err := pci.Scan(gpuFilter)
 	if err != nil {
+		logger.Error("unable to read pci information from sysfs: %s", err)
 		panic("unable to read pci information from sysfs")
 	}
 	var gpus []*GPU
