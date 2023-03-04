@@ -140,7 +140,7 @@ func switchEgpu(gpu *pci.GPU) error {
 		}
 	}
 
-	modesetting := !viper.GetBool("egpu.disableModesetting") // note: absent config defaults to 'false'
+	modesetting := !viper.GetBool("egpu.nomodesetting") // note: absent config defaults to 'false'
 	conf := xorg.RenderConf("Device0", driver, gpu.XorgPCIString(), modesetting)
 	if err := xorg.CreateEgpuFile(x11ConfPath, conf, verbose); err != nil {
 		return err
