@@ -19,6 +19,7 @@ import (
 const x11ConfPath = "/etc/X11/xorg.conf.d/99-egpu-switcher.conf"
 
 var override bool
+var nomodesetting bool
 
 var switchCommand = &cobra.Command{
 	Use:   "switch [auto|internal|egpu]",
@@ -60,8 +61,12 @@ var switchCommand = &cobra.Command{
 		}
 
 		if arg == "internal" {
+			if err := switchInternal(); err != nil {
+				logger.Error("switch failed")
+				return err
+			}
 			logger.Success("switch successful")
-			return switchInternal()
+			return nil
 		}
 
 		gpu := pci.Find(uint64(id))
@@ -113,6 +118,7 @@ var switchCommand = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(switchCommand)
 	switchCommand.PersistentFlags().BoolVar(&override, "override", false, "switch to the eGPU even if there are no displays attached") // todo: usage
+	switchCommand.PersistentFlags().BoolVar(&nomodesetting, "nomodesetting", false, "do not load modesetting module with egpu")
 }
 
 func switchEgpu(gpu *pci.GPU) error {
@@ -136,7 +142,8 @@ func switchEgpu(gpu *pci.GPU) error {
 		}
 	}
 
-	conf := xorg.RenderConf("Device0", driver, gpu.XorgPCIString())
+	nomodesetting = nomodesetting || viper.GetBool("egpu.nomodesetting")
+	conf := xorg.RenderConf("Device0", driver, gpu.XorgPCIString(), !nomodesetting)
 	if err := xorg.CreateEgpuFile(x11ConfPath, conf, verbose); err != nil {
 		return err
 	}

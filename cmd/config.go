@@ -26,11 +26,6 @@ var configCommand = &cobra.Command{
 		gpus := pci.ReadGPUs()
 		amount := int(len(gpus))
 
-		/*if amount < 2 {
-			logger.Error("only one GPU found... please plug in your eGPU to continue")
-			os.Exit(1)
-		}*/
-
 		fmt.Println()
 		fmt.Printf("Found %d possible GPU(s)...\n", amount)
 		fmt.Println()
@@ -67,7 +62,7 @@ var configCommand = &cobra.Command{
 
 		fmt.Println()
 
-		logger.Success("Your selection has been saved")
+		logger.Success("Your selection was saved to the config file")
 
 		return nil
 	},

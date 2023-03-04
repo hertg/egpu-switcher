@@ -34,9 +34,11 @@ var disableCommand = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if err := init.TeardownService(ctx); err != nil {
+
+		if err := init.TeardownService(ctx, verbose); err != nil {
 			return fmt.Errorf("unable to tear down service: %s", err)
 		}
+		logger.Info("removed egpu bootup service")
 
 		if hard {
 			// remove /etc/egpu-switcher
