@@ -41,7 +41,7 @@ and if so, make X.Org prefer it.
 
 ### Ubuntu (apt)
 
-*The PPA is no longer maintained for now (see #90)*
+*The PPA is no longer maintained for now (see [#90](https://github.com/hertg/egpu-switcher/issues/90))*
 
 ### Arch (aur)
 
@@ -52,6 +52,18 @@ paru -S egpu-switcher
 > :deciduous_tree::zap: Save time and energy by using the pre-compiled `egpu-switcher-bin` package
 
 ### Manual
+
+Download binary from [latest release](https://github.com/hertg/egpu-switcher/releases)
+
+Copy binary to `/opt`, apply proper permissions, and link it in `/usr/bin`
+
+```
+sudo cp <downloaded-binary> /opt/egpu-switcher
+sudo chmod 755 /opt/egpu-switcher
+sudo ln -s /opt/egpu-switcher /usr/bin/egpu-switcher
+```
+
+### Build
 
 #### Prerequisites
 
