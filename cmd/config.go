@@ -26,11 +26,6 @@ var configCommand = &cobra.Command{
 		gpus := pci.ReadGPUs()
 		amount := int(len(gpus))
 
-		/*if amount < 2 {
-			logger.Error("only one GPU found... please plug in your eGPU to continue")
-			os.Exit(1)
-		}*/
-
 		fmt.Println()
 		fmt.Printf("Found %d possible GPU(s)...\n", amount)
 		fmt.Println()

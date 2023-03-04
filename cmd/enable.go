@@ -42,7 +42,7 @@ var setupCommand = &cobra.Command{
 			}
 		}
 
-		if err := init.CreateService(ctx); err != nil {
+		if err := init.CreateService(ctx, verbose); err != nil {
 			return err
 		}
 
