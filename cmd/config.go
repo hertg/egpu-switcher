@@ -62,7 +62,7 @@ var configCommand = &cobra.Command{
 
 		fmt.Println()
 
-		logger.Success("Your selection has been saved")
+		logger.Success("Your selection was saved to the config file")
 
 		return nil
 	},

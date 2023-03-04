@@ -34,6 +34,7 @@ var setupCommand = &cobra.Command{
 			logger.Info("no eGPU has been configured yet")
 			if noPrompt {
 				logger.Warn("please run 'egpu-switcher config' to configure your eGPU")
+				return fmt.Errorf("setup aborted")
 			} else {
 				err := configCommand.RunE(cmd, []string{})
 				if err != nil {
@@ -45,6 +46,8 @@ var setupCommand = &cobra.Command{
 		if err := init.CreateService(ctx, verbose); err != nil {
 			return err
 		}
+
+		logger.Info("created egpu bootup service to autorun 'egpu-switcher switch'")
 
 		logger.Success("setup successful")
 		return nil
