@@ -24,7 +24,7 @@ func RemoveEgpuFile(path string, verbose bool) error {
 	if verbose {
 		logger.Debug("deleted '%s'", path)
 	}
-	logger.Info("egpu has been removed from x11 config")
+	logger.Info("egpu has been removed from X.Org config")
 	return nil
 }
 
@@ -40,7 +40,7 @@ func CreateEgpuFile(path string, contents string, verbose bool) error {
 	if verbose {
 		logger.Debug("written '%s'", path)
 	}
-	logger.Info("egpu has been added to x11 config")
+	logger.Info("egpu has been added to X.Org config")
 	return nil
 }
 
