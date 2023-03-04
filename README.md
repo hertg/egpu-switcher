@@ -53,14 +53,26 @@ paru -S egpu-switcher
 
 ### Manual
 
+
+#### Installation and setup
+
 Download binary from [latest release](https://github.com/hertg/egpu-switcher/releases)
 
 Copy binary to `/opt`, apply proper permissions, and link it in `/usr/bin`
 
-```
+```bash
 sudo cp <downloaded-binary> /opt/egpu-switcher
 sudo chmod 755 /opt/egpu-switcher
 sudo ln -s /opt/egpu-switcher /usr/bin/egpu-switcher
+sudo egpu-switcher enable
+```
+
+#### Uninstall
+
+```bash
+sudo egpu-switcher disable --hard
+sudo rm /usr/bin/egpu-switcher
+sudo rm /opt/egpu-switcher
 ```
 
 ### Build
@@ -82,7 +94,7 @@ sudo egpu-switcher enable
 #### Uninstall
 
 ```bash
-sudo egpu-switcher disable
+sudo egpu-switcher disable --hard
 sudo make uninstall -s
 ```
 
