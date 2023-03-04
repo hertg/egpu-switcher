@@ -63,7 +63,7 @@ func initConfig() {
 				if verbose {
 					logger.Debug("no configuration file found, creating a new one at %s\n", configPath)
 				}
-				err = os.MkdirAll(configPath, 0744)
+				err = os.MkdirAll(configPath, 0755)
 				cobra.CheckErr(err)
 				err = viper.SafeWriteConfig()
 				cobra.CheckErr(err)
