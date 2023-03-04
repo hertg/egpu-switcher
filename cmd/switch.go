@@ -60,8 +60,12 @@ var switchCommand = &cobra.Command{
 		}
 
 		if arg == "internal" {
+			if err := switchInternal(); err != nil {
+				logger.Error("switch failed")
+				return err
+			}
 			logger.Success("switch successful")
-			return switchInternal()
+			return nil
 		}
 
 		gpu := pci.Find(uint64(id))
@@ -136,7 +140,8 @@ func switchEgpu(gpu *pci.GPU) error {
 		}
 	}
 
-	conf := xorg.RenderConf("Device0", driver, gpu.XorgPCIString())
+	modesetting := !viper.GetBool("egpu.disableModesetting") // note: absent config defaults to 'false'
+	conf := xorg.RenderConf("Device0", driver, gpu.XorgPCIString(), modesetting)
 	if err := xorg.CreateEgpuFile(x11ConfPath, conf, verbose); err != nil {
 		return err
 	}
