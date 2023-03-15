@@ -1,0 +1,42 @@
+# Last Modified: Wed Mar 15 11:59:47 2023
+abi <abi/3.0>,
+
+include <tunables/global>
+
+/usr/bin/egpu-switcher {
+  include <abstractions/base>
+
+  #capability dac_override,
+  #capability dac_read_search,
+  #capability sys_admin,
+
+  # todo
+  /sys/kernel/mm/transparent_hugepage/hpage_pmd_size r,
+  /etc/nsswitch.conf r,
+  /etc/passwd r,
+
+  # pci.ids
+  /usr/share/hwdata/pci.ids r,
+
+  # scan pci devices and their config header
+  /sys/bus/pci/devices/ r,
+  /sys/devices/**/config r,
+
+  # egpu-switcher binary
+  /usr/bin/egpu-switcher mr,
+
+  # to link the systemd service
+  /etc/systemd/system/egpu.service rwl,
+
+  # generating xorg config
+  /etc/X11/xorg.conf.d/** rw,
+
+  # egpu-switchers config directory
+  /etc/egpu-switcher/ rw,
+  /etc/egpu-switcher/** rw,
+
+  # egpu-switchers share directory
+  /usr/share/egpu-switcher/ rw,
+  /usr/share/egpu-switcher/** rw,
+
+}
