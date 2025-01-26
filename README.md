@@ -21,7 +21,7 @@ command the user can choose their external GPU.
 On every bootup the service will check if the eGPU is connected
 and if so, make X.Org prefer it.
 
-> [!INFO]
+> [!NOTE]
 > **Limitations**: No hotplugging is possible. Users still need to reboot their computer to connect / disconnect the eGPU.
 
 ## Requirements
