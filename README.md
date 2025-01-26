@@ -21,21 +21,14 @@ command the user can choose their external GPU.
 On every bootup the service will check if the eGPU is connected
 and if so, make X.Org prefer it.
 
----
-
-## Limitations
-
-- No hotplugging is possible. Users still need to reboot their computer to connect / disconnect the eGPU.
-
----
+> [!INFO]
+> **Limitations**: No hotplugging is possible. Users still need to reboot their computer to connect / disconnect the eGPU.
 
 ## Requirements
 
 - Running X.Org
 - Thunderbolt connection to eGPU is authorized
 - Necessary graphics drivers for eGPU are installed
-
----
 
 ## Installation
 
@@ -49,10 +42,11 @@ and if so, make X.Org prefer it.
 paru -S egpu-switcher
 ```
 
+> [!TIP]
 > :deciduous_tree::zap: Save time and energy by using the pre-compiled `egpu-switcher-bin` package
 
-### Manual
 
+### Manual
 
 #### Installation and setup
 
@@ -98,7 +92,6 @@ sudo egpu-switcher disable --hard
 sudo make uninstall -s
 ```
 
----
 
 ## Commands
 
@@ -123,7 +116,6 @@ Use "egpu-switcher [command] --help" for more information about a command.
 
 ```
 
----
 
 ## Configuration
 
