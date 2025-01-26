@@ -12,7 +12,7 @@ jobs:
     name: Test
     strategy:
       matrix:
-        go: [ '1.19' ]
+        go: [ '1.23' ]
     uses: ./.github/workflows/go-test.yml
     with:
       go-version: ${{ matrix.go }}
