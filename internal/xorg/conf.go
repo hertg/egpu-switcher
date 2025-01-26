@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"syscall"
 	"text/template"
 
 	"github.com/hertg/egpu-switcher/internal/logger"
@@ -63,10 +64,21 @@ func RenderConf(id string, driver string, busid string, modesetting bool, verbos
 		Modesetting: modesetting,
 	}
 
+	customTemplatePermissionCheck()
+
+	confTemplate, isCustom := templateString(verbose)
+	t := template.Must(template.New("conf").Parse(confTemplate))
 	buf := bytes.NewBuffer(nil)
+	err := t.Execute(buf, c)
+	if err != nil {
+		return "", isCustom, err
+	}
 
+	return buf.String(), isCustom, nil
+}
+
+func templateString(verbose bool) (string, bool) {
 	var confTemplate string
-
 	templateFile, err := os.OpenFile(templatePath, os.O_RDONLY, 0644)
 	isCustom := false
 	if err != nil {
@@ -88,12 +100,34 @@ func RenderConf(id string, driver string, busid string, modesetting bool, verbos
 		confTemplate = buf.String()
 		isCustom = true
 	}
+	return confTemplate, isCustom
+}
 
-	t := template.Must(template.New("conf").Parse(confTemplate))
-	err = t.Execute(buf, c)
+func customTemplatePermissionCheck() {
+	logWarn := false
+	info, err := os.Stat(templatePath)
 	if err != nil {
-		return "", isCustom, err
+		logger.Error("%s", err)
+		return
 	}
+	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+		if stat.Uid != 0 {
+			logger.Warn("the custom x11 config template is not owned by root user")
+			logWarn = true
+		}
+		if stat.Gid != 0 {
+			logger.Warn("the custom x11 config template is not owned by root group")
+			logWarn = true
+		}
 
-	return buf.String(), isCustom, nil
+		otherPerm := info.Mode().Perm() & 0x007
+		if otherPerm&0x2 != 0 {
+			logger.Warn("the custom x11 config template is writable by other")
+			logWarn = true
+		}
+	}
+	if logWarn {
+		logger.Warn("ensure that the custom x11 config template at '%s' is not writable by unauthorized users."+
+			"this could pose a security risk. file should be owned by root:root and have a file permission of 644", templatePath)
+	}
 }
