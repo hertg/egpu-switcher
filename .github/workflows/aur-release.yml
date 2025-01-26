@@ -49,7 +49,7 @@ jobs:
           path: ./.pkgbuild/egpu-switcher-bin/*
 
       - name: Publish egpu-switcher
-        uses: KSXGitHub/github-actions-deploy-aur@v2.5.0
+        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
           pkgname: egpu-switcher
           pkgbuild: ./.pkgbuild/egpu-switcher/PKGBUILD
@@ -60,7 +60,7 @@ jobs:
           commit_message: New release via github actions
 
       - name: Publish egpu-switcher-bin
-        uses: KSXGitHub/github-actions-deploy-aur@v2.5.0
+        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
           pkgname: egpu-switcher-bin
           pkgbuild: ./.pkgbuild/egpu-switcher-bin/PKGBUILD
