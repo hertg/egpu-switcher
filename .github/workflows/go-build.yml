@@ -25,7 +25,7 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           # without that 'git describe --tags' may result
           # in 'fatal: No names found, cannot describe anything.'
@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ inputs.go-version }}
           cache: true
@@ -45,7 +45,7 @@ jobs:
         run: sha256sum ./bin/${{ env.BINARY_NAME }} > ./bin/sha256sum.txt || exit $?
 
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BINARY_NAME }}
           path: ./bin/*

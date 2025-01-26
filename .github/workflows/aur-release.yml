@@ -22,7 +22,7 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Download binary
         uses: actions/download-artifact@v4.1.7
@@ -37,13 +37,13 @@ jobs:
         run: ./.ci/generate-pkgbuild.sh ${{ inputs.version }} ${{ env.SHA256 }}
 
       - name: Upload egpu-switcher PKGBUILD
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: egpu-switcher-PKGBUILD
           path: ./.pkgbuild/egpu-switcher/*
 
       - name: Upload egpu-switcher-bin PKGBUILD
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: egpu-switcher-bin-PKGBUILD
           path: ./.pkgbuild/egpu-switcher-bin/*

@@ -143,15 +143,22 @@ func switchEgpu(gpu *pci.GPU) error {
 	}
 
 	nomodesetting = nomodesetting || viper.GetBool("egpu.nomodesetting")
-	conf := xorg.RenderConf("Device0", driver, gpu.XorgPCIString(), !nomodesetting)
+
+	conf, _, err := xorg.RenderConf("Device0", driver, gpu.XorgPCIString(), !nomodesetting, verbose)
+	if err != nil {
+		return err
+	}
+
 	if err := xorg.CreateEgpuFile(x11ConfPath, conf, verbose); err != nil {
 		return err
 	}
+
 	if post := viper.GetString("hooks.egpu"); post != "" {
 		if err := runHook(post); err != nil {
 			logger.Error("egpu hook error: %s", err)
 		}
 	}
+
 	return nil
 }
 
